@@ -8,21 +8,20 @@
  * - This setup is ideal for obstacle avoidance robots, conveyor belt systems, or automated gates.
  */
 
-
 #include <AutoTunePID.h>
 
 // Define pins
-#define triggerPin 7
-#define echoPin 6
-#define motorPin 3
+#define TRIGGER_PIN 7
+#define ECHO_PIN 6
+#define MOTOR_PIN 3
 
 // Create PID instance
-AutoTunePID pid(255, 0, 10000);
+AutoTunePID pid(0, 255, 10000);
 
 void setup() {
-    pinMode(triggerPin, OUTPUT);
-    pinMode(echoPin, INPUT);
-    pinMode(motorPin, OUTPUT);
+    pinMode(TRIGGER_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    pinMode(MOTOR_PIN, OUTPUT);
     Serial.begin(9600);
 
     // Set PID tunings
@@ -31,14 +30,14 @@ void setup() {
 
 float getDistance() {
     // Send ultrasonic pulse
-    digitalWrite(triggerPin, LOW);
+    digitalWrite(TRIGGER_PIN, LOW);
     delayMicroseconds(2);
-    digitalWrite(triggerPin, HIGH);
+    digitalWrite(TRIGGER_PIN, HIGH);
     delayMicroseconds(10);
-    digitalWrite(triggerPin, LOW);
+    digitalWrite(TRIGGER_PIN, LOW);
 
     // Measure the time for the echo
-    long duration = pulseIn(echoPin, HIGH);
+    long duration = pulseIn(ECHO_PIN, HIGH);
 
     // Convert to distance (cm)
     return (duration * 0.034 / 2);
@@ -52,7 +51,7 @@ void loop() {
     float output = pid.compute(currentDistance, 50.0); // Target distance: 50cm
 
     // Send the output to the motor
-    analogWrite(motorPin, output);
+    analogWrite(MOTOR_PIN, output);
 
     // Debugging info
     Serial.print("Distance: ");

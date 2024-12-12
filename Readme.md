@@ -1,183 +1,178 @@
 # AutoTunePID Library
 
-## Overview
-
-The AutoTunePID library is an easy-to-use library for Arduino IDE that provides a powerful PID (Proportional, Integral, Derivative) controller with built-in auto-tuning capabilities. This library allows developers to implement PID control in their projects with minimal setup, ensuring efficient and accurate system control. It supports a wide range of applications, such as temperature control, motor speed regulation, distance maintenance, and light intensity control.
+AutoTunePID is an advanced PID (Proportional-Integral-Derivative) control library designed for Arduino. It provides robust auto-tuning mechanisms with support for multiple tuning methods, input/output filtering, and manual gain adjustments. This library is ideal for projects requiring precise and stable control over mechanical, electrical, or software systems.
 
 ---
 
 ## Features
 
-- **PID Control:** Automatically adjusts output based on proportional, integral, and derivative error terms.
-- **Auto-Tuning:** Dynamically calculates optimal PID parameters (Kp, Ki, Kd) using the Ziegler-Nichols method.
-- **Configurable Parameters:** Set target values (setpoints), tuning duration, and system-specific constraints.
-- **Versatile Applications:** Works with any system requiring feedback-based control (temperature, distance, speed, light, etc.).
-- **Easy Integration:** Simple and intuitive API for effortless integration into Arduino sketches.
-- **Examples Included:** Three comprehensive examples for quick deployment: temperature control, distance control, and light intensity control.
+- **Automatic Tuning**:
+  - Implements Ziegler-Nichols and Cohen-Coon tuning methods.
+- **Manual Tuning**:
+  - Allows users to set custom PID gains.
+- **Input and Output Filtering**:
+  - Smooths noisy signals using configurable low-pass filters.
+- **Flexible Update Intervals**:
+  - Ensures calculations occur at consistent time steps.
+- **Customizable Tuning Duration**:
+  - Allows fine control over tuning period.
 
 ---
 
 ## Installation
 
-1. **Download the Library:** Download the AutoTunePID library as a `.zip` file from the [GitHub repository](https://github.com/lily-osp/AutoTunePID).
-2. **Add to Arduino IDE:**
-   - Open the Arduino IDE.
-   - Go to **Sketch > Include Library > Add .ZIP Library...**.
-   - Select the downloaded `.zip` file.
-3. **Restart Arduino IDE:** Restart the IDE to ensure the library is loaded.
+1. Download the library files and place them in the `libraries` folder of your Arduino IDE directory.
+2. Ensure the structure looks like this:
 
----
-
-## Library Files
-
-### 1. `AutoTunePID.h`
-
-Contains the class definition and public methods for using the library.
-
-### 2. `AutoTunePID.cpp`
-
-Implements the PID control logic, auto-tuning algorithm, and utility functions.
-
-### 3. `library.properties`
-
-Provides metadata for the Arduino IDE.
-
-### 4. `examples/`
-
-Includes example sketches for common applications:
-
-- **TemperatureControl:** PID-based temperature control system.
-- **DistanceControl:** PID-based distance regulation system.
-- **LightIntensityControl:** PID-based light intensity control system.
-
----
-
-## API Reference
-
-### **Class:** `AutoTunePID`
-
-#### **Constructor**
-
-```cpp
-AutoTunePID(float maxOutput, float minOutput, unsigned long tuningDuration);
+```
+/libraries
+  /AutoTunePID
+    AutoTunePID.h
+    AutoTunePID.cpp
+    examples
+      BasicPID
+      InputFilter
+      OutputFilter
 ```
 
-- **maxOutput:** Maximum allowable output value.
-- **minOutput:** Minimum allowable output value.
-- **tuningDuration:** Duration (in milliseconds) for the auto-tuning process.
-
-#### **Methods**
-
-1. **`void setSetpoint(float setpoint);`**
-
-   - Sets the desired target value for the system.
-
-2. **`float compute(float input);`**
-
-   - Computes the PID output based on the current input.
-   - **Returns:** The control output.
-
-3. **`void startTuning();`**
-
-   - Initiates the auto-tuning process.
-
-4. **`bool isTuning();`**
-
-   - Checks if the system is still in the tuning phase.
-   - **Returns:** `true` if tuning is in progress, `false` otherwise.
-
-5. **`void reset();`**
-
-   - Resets the PID controller, clearing integral and error terms.
+3. Restart your Arduino IDE.
 
 ---
 
 ## Usage
 
-### **Basic Workflow**
+### Initialization
 
-1. Include the library:
-   ```cpp
-   #include <AutoTunePID.h>
-   ```
-2. Create an instance of the `AutoTunePID` class:
-   ```cpp
-   AutoTunePID pid(maxOutput, minOutput, tuningDuration);
-   ```
-3. Set the desired target value (setpoint):
-   ```cpp
-   pid.setSetpoint(targetValue);
-   ```
-4. In the main loop, provide the current sensor reading and get the control output:
-   ```cpp
-   float output = pid.compute(sensorReading);
-   ```
-5. Use the output to control your actuator (e.g., heater, motor, LED, etc.).
+Include the library in your Arduino sketch:
+```cpp
+#include <AutoTunePID.h>
+```
+
+Create an instance of the `AutoTunePID` class:
+```cpp
+AutoTunePID pidController(minOutput, maxOutput, tuningMethod);
+```
+- `minOutput`: Minimum output value (e.g., 0).
+- `maxOutput`: Maximum output value (e.g., 255).
+- `tuningMethod`: Choose from `ZieglerNichols`, `CohenCoon`, or `Manual`.
+
+---
+
+### Setting Parameters
+
+#### Setpoint
+Define the target value the PID controller should achieve:
+```cpp
+pidController.setSetpoint(50.0); // Example: Target temperature, position, etc.
+```
+
+#### Manual Gains
+Set custom gains for `Kp`, `Ki`, and `Kd`:
+```cpp
+pidController.setManualGains(1.0, 0.5, 0.1);
+```
+
+#### Enable Filters
+Enable input and output filtering for smoother operation:
+```cpp
+pidController.enableInputFilter(0.2);  // Alpha = 0.2 for input filtering
+pidController.enableOutputFilter(0.1); // Alpha = 0.1 for output filtering
+```
+
+---
+
+### Updating and Retrieving Output
+
+Update the PID controller with the current input value and retrieve the output:
+```cpp
+pidController.update(currentInput);
+float output = pidController.getOutput();
+```
+
+Apply the output to your system (e.g., motor speed, heater power).
 
 ---
 
 ## Examples
 
-### **1. Temperature Control**
+The library includes three example sketches to demonstrate various features:
 
-This example demonstrates how to use AutoTunePID to maintain a desired temperature using a temperature sensor and a heater/fan.
+### Example 1: Basic PID
+Demonstrates basic PID control with automatic tuning (Ziegler-Nichols or Cohen-Coon) and manual tuning options.
 
-### **2. Distance Control**
+### Example 2: Input Filtering
+Shows how to enable input filtering to smooth noisy sensor data before PID calculation.
 
-This example shows how to maintain a target distance using an ultrasonic sensor and a motor.
+### Example 3: Output Filtering
+Illustrates the use of output filtering to stabilize actuator signals and reduce abrupt changes.
 
-### **3. Light Intensity Control**
+---
 
-This example explains how to regulate light intensity using a photodiode sensor and an LED.
+## API Reference
 
-Refer to the `examples` folder for complete sketches.
+### Constructor
+```cpp
+AutoTunePID(float minOutput, float maxOutput, TuningMethod method = ZieglerNichols);
+```
+
+### Methods
+
+- **Setpoint and Gains**:
+  - `void setSetpoint(float setpoint);`
+  - `void setManualGains(float kp, float ki, float kd);`
+
+- **Tuning**:
+  - `void setTuningMethod(TuningMethod method);`
+  - `float getKp();`
+  - `float getKi();`
+  - `float getKd();`
+
+- **Input/Output Filtering**:
+  - `void enableInputFilter(float alpha);`
+  - `void enableOutputFilter(float alpha);`
+
+- **Update and Retrieve Output**:
+  - `void update(float currentInput);`
+  - `float getOutput();`
 
 ---
 
 ## Example Code
 
-### **Basic Example**
-
+### Basic PID Example
 ```cpp
 #include <AutoTunePID.h>
 
-// Define parameters
-#define SENSOR_PIN A0
-#define OUTPUT_PIN 9
-
-AutoTunePID pid(255, 0, 10000); // maxOutput, minOutput, tuningDuration
+AutoTunePID pidController(0, 255, ZieglerNichols);
 
 void setup() {
-    pinMode(OUTPUT_PIN, OUTPUT);
-    pid.setSetpoint(50.0); // Target value
-    pid.startTuning();
+  Serial.begin(9600);
+  pidController.setSetpoint(50.0); // Example setpoint
 }
 
 void loop() {
-    float sensorValue = analogRead(SENSOR_PIN);
-    float output = pid.compute(sensorValue);
-    analogWrite(OUTPUT_PIN, (int)output);
+  float sensorValue = analogRead(A0);
+  pidController.update(sensorValue);
+  float output = pidController.getOutput();
+  analogWrite(9, output);
 }
 ```
 
 ---
 
-## Applications
+## Notes
 
-- **Home Automation:** Temperature control for smart homes.
-- **Robotics:** Distance maintenance for autonomous vehicles.
-- **Energy Systems:** Light dimming and energy-efficient systems.
-- **Industrial Control:** Process regulation for manufacturing systems.
-
----
-
-## Contributing
-
-Feel free to contribute to the library by submitting pull requests or reporting issues on the [GitHub repository](#).
+- Use appropriate filter alpha values (0.01–1.0) to balance responsiveness and smoothness.
+- Ensure the tuning duration matches the dynamics of your system for accurate auto-tuning.
+- Always test the PID controller in a controlled environment before deploying it in real-world applications.
 
 ---
 
 ## License
 
-This library is licensed under the MIT License. See `LICENSE` for details.
+This library is licensed under the MIT License. Feel free to use, modify, and distribute it for personal and commercial projects.
+
+---
+
+For further assistance or to report issues, please contact [support@example.com].
 

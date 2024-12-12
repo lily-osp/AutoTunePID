@@ -8,18 +8,17 @@
  * - Practical applications include climate control, greenhouses, and smart home temperature management.
  */
 
-
 #include <AutoTunePID.h>
 
 // Define pins
-#define sensorPin A0
-#define actuatorPin 3
+#define SENSOR_PIN A0
+#define ACTUATOR_PIN 3
 
-// Create PID instance (max output, min output, auto-tuning duration in ms)
-AutoTunePID pid(255, 0, 10000);
+// Create PID instance (min output, max output, auto-tuning duration in ms)
+AutoTunePID pid(0, 255, 10000);
 
 void setup() {
-    pinMode(actuatorPin, OUTPUT);
+    pinMode(ACTUATOR_PIN, OUTPUT);
     Serial.begin(9600);
 
     // Set initial tunings (optional if auto-tuning is used)
@@ -29,13 +28,13 @@ void setup() {
 
 void loop() {
     // Read temperature sensor (LM35 outputs 10mV/°C)
-    float currentTemperature = analogRead(sensorPin) * (5.0 / 1023.0) * 100;
+    float currentTemperature = analogRead(SENSOR_PIN) * (5.0 / 1023.0) * 100;
 
     // Compute PID output to control temperature
     float output = pid.compute(currentTemperature, 25.0); // Target temp: 25°C
 
     // Send the output to the actuator (e.g., heater)
-    analogWrite(actuatorPin, output);
+    analogWrite(ACTUATOR_PIN, output);
 
     // Debugging info
     Serial.print("Temp: ");

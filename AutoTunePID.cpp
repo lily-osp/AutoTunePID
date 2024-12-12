@@ -1,131 +1,123 @@
 #include "AutoTunePID.h"
-#include <EEPROM.h>
 
-AutoTunePID::AutoTunePID(float maxOut, float minOut, unsigned long tuneDuration) {
-    maxOutput = maxOut;
-    minOutput = minOut;
-    tuningDuration = tuneDuration;
+AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
+    : _minOutput(minOutput), _maxOutput(maxOutput), _method(method), _kp(0), _ki(0), _kd(0),
+      _error(0), _previousError(0), _integral(0), _output(0), _tuning(true), _lastUpdate(0),
+      _tuningStartTime(0), _tuningDuration(5000), _maxObservedOutput(0), _minObservedOutput(0),
+      _inputFilterEnabled(false), _outputFilterEnabled(false), _inputFilteredValue(0),
+      _outputFilteredValue(0), _inputFilterAlpha(0.1), _outputFilterAlpha(0.1) {}
 
-    // Initialize variables
-    tuning = true;
-    isAutoMode = true; // Default to auto mode
-    Kp = Ki = Kd = 0;
-    integral = 0;
-    lastError = 0;
-    lastTime = millis();
-    maxOutputDuringTuning = minOutputDuringTuning = 0;
-    setpointRampRate = 0;
-    setpoint = 0;
+void AutoTunePID::setSetpoint(float setpoint) {
+    _setpoint = setpoint;
 }
 
-void AutoTunePID::autoTune(float currentReading, float setpoint) {
-    if (!tuning) return;
-
-    float error = setpoint - currentReading;
-    float output = error;
-
-    if (output > maxOutputDuringTuning) maxOutputDuringTuning = output;
-    if (output < minOutputDuringTuning) minOutputDuringTuning = output;
-
-    if (millis() - tuningStartTime > tuningDuration) {
-        tuning = false;
-        Ku = 4 * (maxOutputDuringTuning - minOutputDuringTuning) /
-             (3.14159 * (maxOutputDuringTuning + minOutputDuringTuning));
-        Tu = tuningDuration / 1000.0;
-
-        // Ziegler-Nichols tuning
-        Kp = 0.6 * Ku;
-        Ki = 2 * Kp / Tu;
-        Kd = Kp * Tu / 8;
-    }
+void AutoTunePID::setTuningMethod(TuningMethod method) {
+    _method = method;
 }
 
-float AutoTunePID::compute(float currentReading, float setpoint) {
-    if (!isAutoMode) return lastOutput;
+void AutoTunePID::setManualGains(float kp, float ki, float kd) {
+    _kp = kp;
+    _ki = ki;
+    _kd = kd;
+    _tuning = false;
+}
 
-    // Smoothly ramp setpoint
-    if (setpointRampRate > 0 && setpoint != this->setpoint) {
-        float delta = setpoint - this->setpoint;
-        if (abs(delta) > setpointRampRate) {
-            this->setpoint += (delta > 0 ? setpointRampRate : -setpointRampRate);
-        } else {
-            this->setpoint = setpoint;
+void AutoTunePID::enableInputFilter(float alpha) {
+    _inputFilterEnabled = true;
+    _inputFilterAlpha = constrain(alpha, 0.01, 1.0); // Alpha must be between 0.01 and 1.0
+}
+
+void AutoTunePID::enableOutputFilter(float alpha) {
+    _outputFilterEnabled = true;
+    _outputFilterAlpha = constrain(alpha, 0.01, 1.0); // Alpha must be between 0.01 and 1.0
+}
+
+void AutoTunePID::update(float currentInput) {
+    unsigned long now = millis();
+    if (now - _lastUpdate >= 100) { // Update at fixed intervals (e.g., 100ms)
+        _lastUpdate = now;
+
+        // Apply input filter if enabled
+        if (_inputFilterEnabled) {
+            currentInput = applyFilter(currentInput, _inputFilteredValue, _inputFilterAlpha);
         }
-    } else {
-        this->setpoint = setpoint;
+
+        _error = _setpoint - currentInput;
+        _integral += _error;
+        _derivative = _error - _previousError;
+
+        if (_tuning) {
+            if (_method == ZieglerNichols) {
+                autoTuneZieglerNichols();
+            } else if (_method == CohenCoon) {
+                autoTuneCohenCoon();
+            }
+        } else {
+            computePID();
+        }
+
+        // Apply output filter if enabled
+        if (_outputFilterEnabled) {
+            _output = applyFilter(_output, _outputFilteredValue, _outputFilterAlpha);
+        }
+
+        _previousError = _error;
     }
-
-    unsigned long currentTime = millis();
-    float dt = (currentTime - lastTime) / 1000.0; // Seconds
-    lastTime = currentTime;
-
-    if (dt <= 0) return lastOutput; // Avoid division by zero
-
-    float error = this->setpoint - currentReading;
-
-    // Proportional term
-    float P = Kp * error;
-
-    // Integral term
-    integral += error * dt;
-    clampIntegral();
-    float I = Ki * integral;
-
-    // Derivative term
-    float derivative = (error - lastError) / dt;
-    float D = Kd * derivative;
-
-    lastError = error;
-
-    // PID output
-    float output = P + I + D;
-
-    // Clamp output
-    if (output > maxOutput) output = maxOutput;
-    if (output < minOutput) output = minOutput;
-
-    lastOutput = output;
-    return output;
 }
 
-void AutoTunePID::setTunings(float kp, float ki, float kd) {
-    Kp = kp;
-    Ki = ki;
-    Kd = kd;
+float AutoTunePID::getOutput() {
+    return _output;
 }
 
-void AutoTunePID::setOutputLimits(float maxOut, float minOut) {
-    maxOutput = maxOut;
-    minOutput = minOut;
+float AutoTunePID::getKp() {
+    return _kp;
 }
 
-void AutoTunePID::reset() {
-    integral = 0;
-    lastError = 0;
+float AutoTunePID::getKi() {
+    return _ki;
 }
 
-void AutoTunePID::setMode(bool isAuto) {
-    isAutoMode = isAuto;
-    if (!isAutoMode) reset();
+float AutoTunePID::getKd() {
+    return _kd;
 }
 
-void AutoTunePID::setSetpointRamp(float rampRate) {
-    setpointRampRate = rampRate;
+void AutoTunePID::computePID() {
+    _output = (_kp * _error) + (_ki * _integral) + (_kd * _derivative);
+    _output = constrain(_output, _minOutput, _maxOutput);
 }
 
-void AutoTunePID::saveToEEPROM(int address) {
-    EEPROM.put(address, Kp);
-    EEPROM.put(address + sizeof(Kp), Ki);
-    EEPROM.put(address + sizeof(Kp) + sizeof(Ki), Kd);
+void AutoTunePID::autoTuneZieglerNichols() {
+    _maxObservedOutput = max(_maxObservedOutput, _output);
+    _minObservedOutput = min(_minObservedOutput, _output);
+
+    if (millis() - _tuningStartTime > _tuningDuration) {
+        _tuning = false;
+        _Ku = 4 * (_maxObservedOutput - _minObservedOutput) / (PI * (_maxObservedOutput + _minObservedOutput));
+        _Tu = _tuningDuration / 1000.0;
+
+        _kp = 0.6 * _Ku;
+        _ki = 2 * _kp / _Tu;
+        _kd = _kp * _Tu / 8;
+    }
 }
 
-void AutoTunePID::loadFromEEPROM(int address) {
-    EEPROM.get(address, Kp);
-    EEPROM.get(address + sizeof(Kp), Ki);
-    EEPROM.get(address + sizeof(Kp) + sizeof(Ki), Kd);
+void AutoTunePID::autoTuneCohenCoon() {
+    _maxObservedOutput = max(_maxObservedOutput, _output);
+    _minObservedOutput = min(_minObservedOutput, _output);
+
+    if (millis() - _tuningStartTime > _tuningDuration) {
+        _tuning = false;
+        _Ku = 4 * (_maxObservedOutput - _minObservedOutput) / (PI * (_maxObservedOutput + _minObservedOutput));
+        _Tu = _tuningDuration / 1000.0;
+
+        // Cohen-Coon tuning formulas
+        _kp = 1.35 * _Ku;
+        _ki = _kp / (2.5 * _Tu);
+        _kd = 0.37 * _kp * _Tu;
+    }
 }
 
-void AutoTunePID::clampIntegral() {
-    if (integral > maxOutput / Ki) integral = maxOutput / Ki;
-    if (integral < minOutput / Ki) integral = minOutput / Ki;
+float AutoTunePID::applyFilter(float input, float &filteredValue, float alpha) {
+    filteredValue = (alpha * input) + ((1 - alpha) * filteredValue);
+    return filteredValue;
 }

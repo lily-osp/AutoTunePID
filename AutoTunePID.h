@@ -1,42 +1,61 @@
-#ifndef AutoTunePID_H
-#define AutoTunePID_H
+#ifndef AUTOTUNEPID_H
+#define AUTOTUNEPID_H
 
 #include <Arduino.h>
 
+enum TuningMethod {
+    ZieglerNichols,
+    CohenCoon,
+    Manual
+};
+
 class AutoTunePID {
 public:
-    AutoTunePID(float maxOut, float minOut, unsigned long tuneDuration);
+    AutoTunePID(float minOutput, float maxOutput, TuningMethod method = ZieglerNichols);
 
-    void autoTune(float currentReading, float setpoint);
-    float compute(float currentReading, float setpoint);
-    void setTunings(float kp, float ki, float kd);
-    void setOutputLimits(float maxOut, float minOut);
-    void reset();
-    void setMode(bool isAuto);
-    void setSetpointRamp(float rampRate);
-    void saveToEEPROM(int address);
-    void loadFromEEPROM(int address);
+    void setSetpoint(float setpoint);
+    void setTuningMethod(TuningMethod method);
+    void setManualGains(float kp, float ki, float kd);
+    void enableInputFilter(float alpha);  // Enable input filtering with smoothing factor
+    void enableOutputFilter(float alpha); // Enable output filtering with smoothing factor
+    void update(float currentInput);
+
+    float getOutput();
+    float getKp();
+    float getKi();
+    float getKd();
 
 private:
-    // PID constants
-    float Kp, Ki, Kd;
+    void computePID();
+    void autoTuneZieglerNichols();
+    void autoTuneCohenCoon();
+    float applyFilter(float input, float &filteredValue, float alpha);
 
-    // Output limits
-    float maxOutput, minOutput;
+    float _setpoint;
+    float _minOutput;
+    float _maxOutput;
+    float _kp, _ki, _kd;
+    float _error, _previousError;
+    float _integral, _derivative;
+    float _output;
 
-    // Auto-tuning variables
-    bool tuning, isAutoMode;
-    float Ku, Tu;
-    unsigned long tuningStartTime, tuningDuration;
-    float maxOutputDuringTuning, minOutputDuringTuning;
+    float _Ku, _Tu;
+    TuningMethod _method;
+    unsigned long _lastUpdate;
+    unsigned long _tuningStartTime;
+    unsigned long _tuningDuration;
 
-    // PID variables
-    float integral, lastError, setpointRampRate, setpoint;
-    float lastOutput;
-    unsigned long lastTime;
+    bool _tuning;
+    float _maxObservedOutput;
+    float _minObservedOutput;
 
-    // Prevent integral windup
-    void clampIntegral();
+    // Filters
+    bool _inputFilterEnabled;
+    bool _outputFilterEnabled;
+    float _inputFilteredValue;
+    float _outputFilteredValue;
+    float _inputFilterAlpha;
+    float _outputFilterAlpha;
 };
 
 #endif
