@@ -1,178 +1,185 @@
 # AutoTunePID Library
 
-AutoTunePID is an advanced PID (Proportional-Integral-Derivative) control library designed for Arduino. It provides robust auto-tuning mechanisms with support for multiple tuning methods, input/output filtering, and manual gain adjustments. This library is ideal for projects requiring precise and stable control over mechanical, electrical, or software systems.
-
----
+A robust, feature-rich PID control library for Arduino that implements advanced auto-tuning algorithms and signal filtering capabilities.
 
 ## Features
 
-- **Automatic Tuning**:
-  - Implements Ziegler-Nichols and Cohen-Coon tuning methods.
-- **Manual Tuning**:
-  - Allows users to set custom PID gains.
-- **Input and Output Filtering**:
-  - Smooths noisy signals using configurable low-pass filters.
-- **Flexible Update Intervals**:
-  - Ensures calculations occur at consistent time steps.
-- **Customizable Tuning Duration**:
-  - Allows fine control over tuning period.
+- **Advanced PID Control Implementation**
+  - Real-time PID calculations with configurable update intervals
+  - Constrained output range for system protection
+  - Support for both auto-tuning and manual parameter configuration
 
----
+- **Multiple Auto-Tuning Methods**
+  - Ziegler-Nichols method
+  - Cohen-Coon method
+  - Manual tuning capability with direct gain settings
+
+- **Signal Processing**
+  - Configurable input signal filtering
+  - Output smoothing capabilities
+  - Exponential moving average filters with adjustable alpha values
+
+- **Safety and Reliability**
+  - Constrained output values
+  - Fixed interval updates
+  - Protected filter parameters
 
 ## Installation
 
-1. Download the library files and place them in the `libraries` folder of your Arduino IDE directory.
-2. Ensure the structure looks like this:
+1. Download the latest release from GitHub
+2. In Arduino IDE: Sketch > Include Library > Add .ZIP Library
+3. Select the downloaded file
+4. Restart Arduino IDE
 
-```
-/libraries
-  /AutoTunePID
-    AutoTunePID.h
-    AutoTunePID.cpp
-    examples
-      BasicPID
-      InputFilter
-      OutputFilter
-```
+## Quick Start
 
-3. Restart your Arduino IDE.
-
----
-
-## Usage
-
-### Initialization
-
-Include the library in your Arduino sketch:
-```cpp
-#include <AutoTunePID.h>
-```
-
-Create an instance of the `AutoTunePID` class:
-```cpp
-AutoTunePID pidController(minOutput, maxOutput, tuningMethod);
-```
-- `minOutput`: Minimum output value (e.g., 0).
-- `maxOutput`: Maximum output value (e.g., 255).
-- `tuningMethod`: Choose from `ZieglerNichols`, `CohenCoon`, or `Manual`.
-
----
-
-### Setting Parameters
-
-#### Setpoint
-Define the target value the PID controller should achieve:
-```cpp
-pidController.setSetpoint(50.0); // Example: Target temperature, position, etc.
-```
-
-#### Manual Gains
-Set custom gains for `Kp`, `Ki`, and `Kd`:
-```cpp
-pidController.setManualGains(1.0, 0.5, 0.1);
-```
-
-#### Enable Filters
-Enable input and output filtering for smoother operation:
-```cpp
-pidController.enableInputFilter(0.2);  // Alpha = 0.2 for input filtering
-pidController.enableOutputFilter(0.1); // Alpha = 0.1 for output filtering
-```
-
----
-
-### Updating and Retrieving Output
-
-Update the PID controller with the current input value and retrieve the output:
-```cpp
-pidController.update(currentInput);
-float output = pidController.getOutput();
-```
-
-Apply the output to your system (e.g., motor speed, heater power).
-
----
-
-## Examples
-
-The library includes three example sketches to demonstrate various features:
-
-### Example 1: Basic PID
-Demonstrates basic PID control with automatic tuning (Ziegler-Nichols or Cohen-Coon) and manual tuning options.
-
-### Example 2: Input Filtering
-Shows how to enable input filtering to smooth noisy sensor data before PID calculation.
-
-### Example 3: Output Filtering
-Illustrates the use of output filtering to stabilize actuator signals and reduce abrupt changes.
-
----
-
-## API Reference
-
-### Constructor
-```cpp
-AutoTunePID(float minOutput, float maxOutput, TuningMethod method = ZieglerNichols);
-```
-
-### Methods
-
-- **Setpoint and Gains**:
-  - `void setSetpoint(float setpoint);`
-  - `void setManualGains(float kp, float ki, float kd);`
-
-- **Tuning**:
-  - `void setTuningMethod(TuningMethod method);`
-  - `float getKp();`
-  - `float getKi();`
-  - `float getKd();`
-
-- **Input/Output Filtering**:
-  - `void enableInputFilter(float alpha);`
-  - `void enableOutputFilter(float alpha);`
-
-- **Update and Retrieve Output**:
-  - `void update(float currentInput);`
-  - `float getOutput();`
-
----
-
-## Example Code
-
-### Basic PID Example
 ```cpp
 #include <AutoTunePID.h>
 
-AutoTunePID pidController(0, 255, ZieglerNichols);
+// Initialize PID controller with output range and tuning method
+AutoTunePID pid(0, 255, ZieglerNichols);
 
 void setup() {
-  Serial.begin(9600);
-  pidController.setSetpoint(50.0); // Example setpoint
+    // Configure controller
+    pid.setSetpoint(100.0);
+    pid.enableInputFilter(0.1);  // Optional: Enable input filtering
 }
 
 void loop() {
-  float sensorValue = analogRead(A0);
-  pidController.update(sensorValue);
-  float output = pidController.getOutput();
-  analogWrite(9, output);
+    float input = analogRead(A0);
+    pid.update(input);
+    analogWrite(PWM_PIN, pid.getOutput());
 }
 ```
 
----
+## API Reference
 
-## Notes
+### Core Functions
 
-- Use appropriate filter alpha values (0.01–1.0) to balance responsiveness and smoothness.
-- Ensure the tuning duration matches the dynamics of your system for accurate auto-tuning.
-- Always test the PID controller in a controlled environment before deploying it in real-world applications.
+#### Initialization
+```cpp
+AutoTunePID(float minOutput, float maxOutput, TuningMethod method = ZieglerNichols);
+```
+- `minOutput`: Lower bound for controller output
+- `maxOutput`: Upper bound for controller output
+- `method`: Auto-tuning method selection
 
----
+#### Control Configuration
+```cpp
+void setSetpoint(float setpoint);
+void setTuningMethod(TuningMethod method);
+void setManualGains(float kp, float ki, float kd);
+```
+
+#### Signal Filtering
+```cpp
+void enableInputFilter(float alpha);   // alpha range: 0.01-1.0
+void enableOutputFilter(float alpha);  // alpha range: 0.01-1.0
+```
+
+#### Runtime Operations
+```cpp
+void update(float currentInput);  // Update at minimum 100ms intervals
+float getOutput();
+```
+
+#### Parameter Access
+```cpp
+float getKp();
+float getKi();
+float getKd();
+```
+
+## Advanced Usage
+
+### Auto-Tuning Process
+
+The library implements two auto-tuning methods:
+
+1. **Ziegler-Nichols Method**
+   - Determines ultimate gain (Ku) and oscillation period (Tu)
+   - Calculates parameters:
+     - Kp = 0.6 * Ku
+     - Ki = 2 * Kp / Tu
+     - Kd = Kp * Tu / 8
+
+2. **Cohen-Coon Method**
+   - Uses similar principles but with different multipliers
+   - Calculates parameters:
+     - Kp = 1.35 * Ku
+     - Ki = Kp / (2.5 * Tu)
+     - Kd = 0.37 * Kp * Tu
+
+### Signal Filtering
+
+Input and output filters use an exponential moving average:
+```cpp
+filteredValue = (alpha * input) + ((1 - alpha) * filteredValue)
+```
+where `alpha` determines the filter's responsiveness (0.01-1.0)
+
+## Application Examples
+
+### Temperature Control System
+```cpp
+#include <AutoTunePID.h>
+
+AutoTunePID tempController(0, 255, ZieglerNichols);
+
+void setup() {
+    tempController.setSetpoint(75.0);  // 75°C target
+    tempController.enableInputFilter(0.1);  // Smooth temperature readings
+    tempController.enableOutputFilter(0.2); // Smooth heater control
+}
+
+void loop() {
+    float currentTemp = readTemperature();
+    tempController.update(currentTemp);
+    analogWrite(HEATER_PIN, tempController.getOutput());
+    delay(100);
+}
+```
+
+### Motor Speed Control
+```cpp
+#include <AutoTunePID.h>
+
+AutoTunePID speedController(0, 255, CohenCoon);
+
+void setup() {
+    speedController.setSetpoint(1000);  // 1000 RPM target
+    speedController.enableInputFilter(0.2);
+}
+
+void loop() {
+    float currentSpeed = readEncoderSpeed();
+    speedController.update(currentSpeed);
+    analogWrite(MOTOR_PIN, speedController.getOutput());
+    delay(100);
+}
+```
+
+## Performance Considerations
+
+- Update interval fixed at 100ms for stability
+- Filter alpha values impact system responsiveness
+- Auto-tuning duration affects parameter accuracy
+- Memory usage: ~40 bytes for instance variables
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
 
 ## License
 
-This library is licensed under the MIT License. Feel free to use, modify, and distribute it for personal and commercial projects.
+This project is licensed under the MIT License. See LICENSE file for details.
 
----
+## Support
 
-For further assistance or to report issues, please contact [support@example.com].
+For bug reports and feature requests, please use the GitHub issue tracker.
 
+For technical questions, contact: azzar.mr.zs@gmail.com
