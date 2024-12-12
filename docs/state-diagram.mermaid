@@ -1,0 +1,229 @@
+stateDiagram
+  direction LR
+  state Initialization {
+    direction TB
+    [*] --> ConfigureBase:Create PID Instance
+    ConfigureBase --> SetParameters:Configure Basic Parameters
+    state SetParameters {
+      direction TB
+      [*] --> SetOutputLimits:Set Min/Max Output
+      SetOutputLimits --> SetTuningMethod:Select Method
+      SetTuningMethod --> SetFilters:Configure Filters
+      SetFilters --> SetAntiWindup:Configure Anti-Windup
+      SetAntiWindup --> SetOscillationMode:Configure Oscillation Mode
+[*]      SetOutputLimits
+      SetTuningMethod
+      SetFilters
+      SetAntiWindup
+      SetOscillationMode
+    }
+  }
+  state OperatingMode {
+    direction TB
+    [*] --> ModeSelection
+    ModeSelection --> ManualControl:Manual Selected
+    ModeSelection --> AutoTuning:Auto Selected
+    ModeSelection --> OperationalModeSelection:Select Operational Mode
+    AutoTuning --> PIDOperation:Tuning Complete
+    ManualControl --> PIDOperation:Manual Gains Set
+    PIDOperation --> ModeSelection:Next Cycle
+    state ManualControl {
+      direction TB
+      [*] --> ReadManualGains:Get Kp, Ki, Kd
+      ReadManualGains --> ValidateGains:Check Ranges
+      ValidateGains --> ApplyManualGains:Set Controller
+[*]      ReadManualGains
+      ValidateGains
+      ApplyManualGains
+    }
+    state AutoTuning {
+      direction TB
+      [*] --> InitialState:Start Tuning
+      InitialState --> OscillationState:Begin Data Collection
+      OscillationState --> CompletionState:Duration Elapsed
+      state InitialState {
+        direction TB
+        [*] --> ResetVariables:Clear Previous Data
+        ResetVariables --> InitializeTimers:Start Timing
+        InitializeTimers --> SetupOscillation:Prepare System
+[*]        ResetVariables
+        InitializeTimers
+        SetupOscillation
+      }
+      state OscillationState {
+        direction TB
+        [*] --> RelayControl:Apply Relay Output
+        RelayControl --> PeakDetection:Monitor Response
+        PeakDetection --> DataCollection:Store Peaks
+        DataCollection --> CheckDuration:Verify Time
+[*]        RelayControl
+        PeakDetection
+        DataCollection
+        CheckDuration
+      }
+      state CompletionState {
+        direction TB
+        [*] --> AnalyzeData:Process Collected Data
+        AnalyzeData --> MethodSelection:Choose Method
+        MethodSelection --> CalculateGains:Compute PID Values
+        CalculateGains --> ValidateResults:Check Gains
+        state MethodSelection {
+          direction TB
+          [*] --> ZieglerNichols
+          [*] --> CohenCoon
+          [*] --> IMC
+          [*] --> TyreusLuyben
+          [*] --> LambdaTuning
+[*]          ZieglerNichols
+          CohenCoon
+          IMC
+          TyreusLuyben
+          LambdaTuning
+        }
+      }
+    }
+    state OperationalModeSelection {
+      direction TB
+      [*] --> NormalMode:Normal
+      [*] --> ReverseMode:Reverse
+      [*] --> HoldMode:Hold
+      [*] --> PreserveMode:Preserve
+      [*] --> TuneMode:Tune
+      [*] --> AutoMode:Auto
+[*]      NormalMode
+      ReverseMode
+      HoldMode
+      PreserveMode
+      TuneMode
+      AutoMode
+    }
+    state PIDOperation {
+      direction TB
+      [*] --> InputProcessing
+      InputProcessing --> TermCalculation
+      TermCalculation --> OutputProcessing
+      state InputProcessing {
+        direction TB
+        [*] --> ReadInput:Get Current Value
+        ReadInput --> ApplyInputFilter:Filter If Enabled
+        ApplyInputFilter --> CalculateError:Compare to Setpoint
+[*]        ReadInput
+        ApplyInputFilter
+        CalculateError
+      }
+      state TermCalculation {
+        direction TB
+        [*] --> ProportionalTerm:Calculate P
+        ProportionalTerm --> IntegralTerm:Calculate I
+        IntegralTerm --> ApplyAntiWindup:Apply Anti-Windup
+        ApplyAntiWindup --> DerivativeTerm:Calculate D
+        DerivativeTerm --> SumTerms:Combine Terms
+[*]        ProportionalTerm
+        IntegralTerm
+        ApplyAntiWindup
+        DerivativeTerm
+        SumTerms
+      }
+      state OutputProcessing {
+        direction TB
+        [*] --> CombineOutput:Sum PID Terms
+        CombineOutput --> ApplyOutputFilter:Filter If Enabled
+        ApplyOutputFilter --> LimitOutput:Apply Min/Max
+        LimitOutput --> UpdateOutput:Set Final Output
+[*]        CombineOutput
+        ApplyOutputFilter
+        LimitOutput
+        UpdateOutput
+      }
+    }
+  }
+  [*] --> Initialization
+  Initialization --> OperatingMode
+  OperatingMode --> [*]:System Stop
+  note right of SetFilters
+  Input Filter (α = 0.01-1.0)
+                Output Filter (α = 0.01-1.0)
+  end note
+  note right of SetAntiWindup
+  Anti-Windup:
+                - Enable/Disable
+                - Threshold (0.0-1.0)
+  end note
+  note right of SetOscillationMode
+  Oscillation Modes:
+                - Normal (Full)
+                - Half (1/2)
+                - Mild (1/4)
+  end note
+  note right of NormalMode
+  Normal Mode:
+                Standard PID operation
+  end note
+  note right of ReverseMode
+  Reverse Mode:
+                Reverses error for cooling systems
+  end note
+  note right of HoldMode
+  Hold Mode:
+                Stops calculations to save resources
+  end note
+  note right of PreserveMode
+  Preserve Mode:
+                Minimal calculations, keeps system responsive
+  end note
+  note right of TuneMode
+  Tune Mode:
+                Performs auto-tuning
+  end note
+  note right of AutoMode
+  Auto Mode:
+                Automatically selects the best mode
+  end note
+  note right of DataCollection
+  Store:
+                    - Peak values
+                    - Time between peaks
+                    - Amplitude data
+  end note
+  note right of ZieglerNichols
+  Ziegler-Nichols:
+                        Kp = 0.6Ku
+                        Ki = 1.2Kp/Tu
+                        Kd = 0.075KpTu
+  end note
+  note right of CohenCoon
+  Cohen-Coon:
+                        Kp = 0.8Ku
+                        Ki = Kp/(0.8Tu)
+                        Kd = 0.194KpTu
+  end note
+  note right of IMC
+  IMC Method:
+                        λ = 0.5Tu
+                        Kp = 0.4Ku
+                        Ki = Kp/(2.0λ)
+                        Kd = 0.5Kpλ
+  end note
+  note right of TyreusLuyben
+  Tyreus-Luyben:
+                        Kp = 0.45Ku
+                        Ki = Kp/(2.2Tu)
+                        Kd = 0.0
+  end note
+  note right of LambdaTuning
+  Lambda Tuning (CLD):
+                        Kp = T / (K(λ + L))
+                        Ki = Kp / T
+                        Kd = Kp * 0.5L
+  end note
+  note right of ProportionalTerm : P = Kp * error
+  note right of IntegralTerm : I = Ki * ∫error dt
+  note right of ApplyAntiWindup
+  Anti-Windup:
+                    Constrain integral term
+                    if output is saturated
+  end note
+  note right of DerivativeTerm
+  D = Kd * d(error)/dt
+                    Filtered derivative
+  end note

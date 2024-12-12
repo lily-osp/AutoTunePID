@@ -1,0 +1,132 @@
+---
+config:
+  layout: elk
+---
+flowchart TD
+    A(["Start"]) --> B["Initialize PID Controller"]
+    B --> C["Set Output Limits"]
+    C --> D["Set Tuning Method"]
+    D --> E{"Enable Input Filter?"}
+    E -- Yes --> F["Set Input Filter Alpha"]
+    E -- No --> G{"Enable Output Filter?"}
+    F --> G
+    G -- Yes --> H["Set Output Filter Alpha"]
+    G -- No --> I{"Enable Anti-Windup?"}
+    H --> I
+    I -- Yes --> J["Set Anti-Windup Threshold"]
+    I -- No --> K{"Set Oscillation Mode?"}
+    J --> K
+    K -- Yes --> L["Set Oscillation Mode (Normal, Half, Mild)"]
+    K -- No --> M["Set Setpoint"]
+    L --> M
+    M --> N{"Manual or Auto-Tuning?"}
+    N -- Manual --> O["Set Manual Gains"]
+    O --> P["Enter Runtime Loop"]
+    N -- "Auto-Tuning" --> Q["Start Auto-Tuning Process"]
+    Q --> R["Reset Variables"]
+    R --> S["Initialize Timers"]
+    S --> T["Apply Relay Output"]
+    T --> U["Monitor System Response"]
+    U --> V["Detect Peaks"]
+    V --> W["Store Peak Data"]
+    W --> X{"Enough Data Collected?"}
+    X -- No --> T
+    X -- Yes --> Y["Analyze Data"]
+    Y --> Z["Select Tuning Method"]
+    Z -- "Ziegler-Nichols" --> AA1["Calculate Ziegler-Nichols Gains"]
+    Z -- "Cohen-Coon" --> AA2["Calculate Cohen-Coon Gains"]
+    Z -- "Lambda-Tuning" --> AA3["Calculate Lambda-Tuning Gains"]
+    Z -- "IMC" --> AA4["Calculate IMC Gains"]
+    Z -- "Tyreus-Luyben" --> AA5["Calculate Tyreus-Luyben Gains"]
+    AA1 --> AB["Validate Gains"]
+    AA2 --> AB
+    AA3 --> AB
+    AA4 --> AB
+    AA5 --> AB
+    AB --> AC["Apply Gains to PID Controller"]
+    AC --> P
+    P --> AD["Read Input"]
+    AD --> AE{"Apply Input Filter?"}
+    AE -- Yes --> AF["Filter Input"]
+    AE -- No --> AG["Calculate Error"]
+    AF --> AG
+    AG --> AH["Calculate Proportional Term"]
+    AH --> AI["Calculate Integral Term"]
+    AI --> AJ{"Apply Anti-Windup?"}
+    AJ -- Yes --> AK["Constrain Integral Term"]
+    AJ -- No --> AL["Calculate Derivative Term"]
+    AK --> AL
+    AL --> AM["Sum PID Terms"]
+    AM --> AN{"Apply Output Filter?"}
+    AN -- Yes --> AO["Filter Output"]
+    AN -- No --> AP["Limit Output to Min/Max"]
+    AO --> AP
+    AP --> AQ["Update Output"]
+    AQ --> AR{"Continue Operation?"}
+    AR -- Yes --> AD
+    AR -- No --> AS(["End"])
+     A:::start
+     B:::init
+     C:::init
+     D:::init
+     E:::decision
+     F:::filter
+     G:::decision
+     H:::filter
+     I:::decision
+     J:::antiwindup
+     K:::decision
+     L:::oscillation
+     M:::init
+     N:::decision
+     O:::manual
+     P:::runtime
+     Q:::autotune
+     R:::autotune
+     S:::autotune
+     T:::autotune
+     U:::autotune
+     V:::autotune
+     W:::autotune
+     X:::autotune
+     Y:::autotune
+     Z:::autotune
+     AA1:::autotune
+     AA1:::tuning
+     AA2:::autotune
+     AA2:::tuning
+     AA3:::autotune
+     AA3:::tuning
+     AA4:::autotune
+     AA4:::tuning
+     AA5:::autotune
+     AA5:::tuning
+     AB:::autotune
+     AC:::autotune
+     AD:::runtime
+     AE:::decision
+     AF:::filter
+     AG:::runtime
+     AH:::runtime
+     AI:::runtime
+     AJ:::decision
+     AK:::antiwindup
+     AL:::runtime
+     AM:::runtime
+     AN:::decision
+     AO:::filter
+     AP:::runtime
+     AQ:::runtime
+     AR:::decision
+     AS:::finish
+    classDef start fill:#4CAF50,color:white,stroke:#388E3C,stroke-width:2px
+    classDef init fill:#2196F3,color:white,stroke:#1976D2,stroke-width:2px
+    classDef decision fill:#FFC107,color:black,stroke:#FFA000,stroke-width:2px
+    classDef filter fill:#9C27B0,color:white,stroke:#7B1FA2,stroke-width:2px
+    classDef antiwindup fill:#E91E63,color:white,stroke:#C2185B,stroke-width:2px
+    classDef manual fill:#FF5722,color:white,stroke:#E64A19,stroke-width:2px
+    classDef autotune fill:#009688,color:white,stroke:#00796B,stroke-width:2px
+    classDef tuning fill:#673AB7,color:white,stroke:#512DA8,stroke-width:2px
+    classDef runtime fill:#03A9F4,color:white,stroke:#0288D1,stroke-width:2px
+    classDef finish fill:#F44336,color:white,stroke:#D32F2F,stroke-width:2px
+    classDef oscillation fill:#FF9800,color:black,stroke:#F57C00,stroke-width:2px
