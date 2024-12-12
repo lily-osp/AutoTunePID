@@ -19,7 +19,7 @@ The AutoTunePID library is an easy-to-use library for Arduino IDE that provides 
 
 ## Installation
 
-1. **Download the Library:** Download the AutoTunePID library as a `.zip` file from the [GitHub repository](#).
+1. **Download the Library:** Download the AutoTunePID library as a `.zip` file from the [GitHub repository](https://github.com/lily-osp/AutoTunePID).
 2. **Add to Arduino IDE:**
    - Open the Arduino IDE.
    - Go to **Sketch > Include Library > Add .ZIP Library...**.
