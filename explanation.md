@@ -1,5 +1,3 @@
----
-
 ### **PID Tuning Algorithms: A Comprehensive Guide**
 
 This guide provides an in-depth explanation of various PID tuning algorithms available in the AutoTunePID library: Ziegler-Nichols, Cohen-Coon, Relay Feedback Method, IMC-Based Tuning, and Manual Tuning. Each method is analyzed through general explanation, requirements, steps, strengths, weaknesses, and best use-cases.
@@ -199,5 +197,3 @@ Manual tuning offers complete control over the PID parameters (‘Kp’, ‘Ki�
 | **Relay Feedback**    | Moderate-High    | Slow           | Oscillation tolerance, ability to measure output amplitude and period. | Automatically induces oscillations via a relay.    | Minimal user intervention, avoids manual oscillation trials.         | Time-consuming, less effective in noisy or delayed systems.           | Systems with unknown dynamics.                   |
 | **IMC-Based Tuning**  | High             | Moderate       | Precise process model, gain, time constant, dead time, and desired time constant. | Uses process models to balance speed and stability.| Robust, handles dead time, adjustable performance tuning.            | Requires precise modeling, complex setup.                             | Dead-time-dominant systems with stability needs. |
 | **Manual Tuning**     | Low-High         | Variable       | Expertise in PID control, time for iterative adjustments, system tolerance for gradual changes. | Adjusts parameters manually through trial and error.| Fully customizable, works for unique dynamics, no assumptions needed.| Time-intensive, prone to errors, results depend on user expertise.    | Unique or challenging system dynamics.           |
-
-Let me know if you'd like further tweaks!
