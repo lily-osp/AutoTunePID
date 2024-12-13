@@ -168,7 +168,8 @@ void loop() {
 
 ## Detailed explanation
 
-- for more detailed about the algorithms used on the library you can read [here](explanation.md)
+- for more detailed about the algorithms used on the library you can read [here](info/explanation.md)
+- for more detailed about the library usage you can read [here](info/usage.md)
 
 ## Contributing
 
