@@ -166,6 +166,10 @@ void loop() {
 - Auto-tuning duration affects parameter accuracy
 - Memory usage: ~40 bytes for instance variables
 
+## Detailed explanation
+
+- for more detailed about the algorithms used on the library you can read [here](explanation.md)
+
 ## Contributing
 
 Contributions are welcome! Please follow these steps:

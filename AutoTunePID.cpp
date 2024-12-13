@@ -24,20 +24,19 @@ void AutoTunePID::setManualGains(float kp, float ki, float kd) {
 
 void AutoTunePID::enableInputFilter(float alpha) {
     _inputFilterEnabled = true;
-    _inputFilterAlpha = constrain(alpha, 0.01, 1.0); // Alpha must be between 0.01 and 1.0
+    _inputFilterAlpha = constrain(alpha, 0.01, 1.0);
 }
 
 void AutoTunePID::enableOutputFilter(float alpha) {
     _outputFilterEnabled = true;
-    _outputFilterAlpha = constrain(alpha, 0.01, 1.0); // Alpha must be between 0.01 and 1.0
+    _outputFilterAlpha = constrain(alpha, 0.01, 1.0);
 }
 
 void AutoTunePID::update(float currentInput) {
     unsigned long now = millis();
-    if (now - _lastUpdate >= 100) { // Update at fixed intervals (e.g., 100ms)
+    if (now - _lastUpdate >= 100) {
         _lastUpdate = now;
 
-        // Apply input filter if enabled
         if (_inputFilterEnabled) {
             currentInput = applyFilter(currentInput, _inputFilteredValue, _inputFilterAlpha);
         }
@@ -51,12 +50,15 @@ void AutoTunePID::update(float currentInput) {
                 autoTuneZieglerNichols();
             } else if (_method == CohenCoon) {
                 autoTuneCohenCoon();
+            } else if (_method == RelayFeedback) {
+                autoTuneRelayFeedback();
+            } else if (_method == IMC) {
+                autoTuneIMC();
             }
         } else {
             computePID();
         }
 
-        // Apply output filter if enabled
         if (_outputFilterEnabled) {
             _output = applyFilter(_output, _outputFilteredValue, _outputFilterAlpha);
         }
@@ -110,10 +112,37 @@ void AutoTunePID::autoTuneCohenCoon() {
         _Ku = 4 * (_maxObservedOutput - _minObservedOutput) / (PI * (_maxObservedOutput + _minObservedOutput));
         _Tu = _tuningDuration / 1000.0;
 
-        // Cohen-Coon tuning formulas
         _kp = 1.35 * _Ku;
         _ki = _kp / (2.5 * _Tu);
         _kd = 0.37 * _kp * _Tu;
+    }
+}
+
+void AutoTunePID::autoTuneRelayFeedback() {
+    _maxObservedOutput = max(_maxObservedOutput, _output);
+    _minObservedOutput = min(_minObservedOutput, _output);
+
+    if (millis() - _tuningStartTime > _tuningDuration) {
+        _tuning = false;
+        _Ku = 4 * (_maxObservedOutput - _minObservedOutput) / (PI * (_maxObservedOutput + _minObservedOutput));
+        _Tu = _tuningDuration / 1000.0;
+
+        _kp = 0.6 * _Ku;
+        _ki = 1.2 * _kp / _Tu;
+        _kd = 0.075 * _kp * _Tu;
+    }
+}
+
+void AutoTunePID::autoTuneIMC() {
+    const float lambda = 0.5;
+    if (millis() - _tuningStartTime > _tuningDuration) {
+        _tuning = false;
+        _Ku = (_maxOutput - _minOutput) / (_maxObservedOutput + _minObservedOutput);
+        _Tu = _tuningDuration / 1000.0;
+
+        _kp = _Ku / (lambda + _Tu);
+        _ki = _kp / (_Tu + lambda);
+        _kd = _kp * (_Tu * lambda) / (_Tu + lambda);
     }
 }
 

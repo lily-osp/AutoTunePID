@@ -6,6 +6,8 @@
 enum TuningMethod {
     ZieglerNichols,
     CohenCoon,
+    RelayFeedback,
+    IMC,
     Manual
 };
 
@@ -16,8 +18,8 @@ public:
     void setSetpoint(float setpoint);
     void setTuningMethod(TuningMethod method);
     void setManualGains(float kp, float ki, float kd);
-    void enableInputFilter(float alpha);  // Enable input filtering with smoothing factor
-    void enableOutputFilter(float alpha); // Enable output filtering with smoothing factor
+    void enableInputFilter(float alpha);
+    void enableOutputFilter(float alpha);
     void update(float currentInput);
 
     float getOutput();
@@ -29,6 +31,8 @@ private:
     void computePID();
     void autoTuneZieglerNichols();
     void autoTuneCohenCoon();
+    void autoTuneRelayFeedback();
+    void autoTuneIMC();
     float applyFilter(float input, float &filteredValue, float alpha);
 
     float _setpoint;
@@ -49,7 +53,6 @@ private:
     float _maxObservedOutput;
     float _minObservedOutput;
 
-    // Filters
     bool _inputFilterEnabled;
     bool _outputFilterEnabled;
     float _inputFilteredValue;
