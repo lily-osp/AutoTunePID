@@ -24,9 +24,9 @@ The Ziegler-Nichols method is one of the oldest and most widely used tuning appr
    - Measure and note the ultimate gain (‘Ku’) and ultimate period (‘Tu’).
 4. **Calculate PID Gains:**
    - Use the following formulas to calculate the PID parameters:
-     - \( Kp = 0.6 \cdot Ku \)
-     - \( Ki = 2 \cdot Kp / Tu \)
-     - \( Kd = Kp \cdot Tu / 8 \)
+     - $\( Kp = 0.6 \cdot Ku \)$
+     - $\( Ki = 2 \cdot Kp / Tu \)$
+     - $\( Kd = Kp \cdot Tu / 8 \)$
 
 #### **Strengths**
 - Simple to implement.
@@ -60,9 +60,9 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
    - Measure the process gain (‘K’), time constant (‘τ’), and dead time (‘L’).
 2. **Calculate PID Gains:**
    - Use the following formulas:
-     - \( Kp = 1.35 \cdot K \)
-     - \( Ki = Kp / (2.5 \cdot τ) \)
-     - \( Kd = 0.37 \cdot Kp \cdot τ \)
+     - $\( Kp = 1.35 \cdot K \)$
+     - $\( Ki = Kp / (2.5 \cdot τ) \)$
+     - $\( Kd = 0.37 \cdot Kp \cdot τ \)$
 
 #### **Strengths**
 - Handles systems with dead time effectively.
@@ -91,13 +91,13 @@ The Relay Feedback Method, also known as the Åström-Hägglund method, introduc
 #### **Steps**
 1. **Insert Relay:**
    - Replace the proportional controller with a relay.
-   - Set the relay amplitude to \(\pm A\).
+   - Set the relay amplitude to $\(\pm A\)$.
 2. **Observe Oscillations:**
    - Allow the system to oscillate due to the relay.
    - Measure the output amplitude (‘P_o’) and period (‘Tu’).
 3. **Calculate PID Gains:**
    - Compute ultimate gain (‘Ku’) as:
-     - \( Ku = 4A / (\pi \cdot P_o) \)
+     - $\( Ku = 4A / (\pi \cdot P_o) \)$
    - Use the values to derive PID parameters.
 
 #### **Strengths**
@@ -131,9 +131,9 @@ IMC-Based Tuning uses a process model to compute PID parameters, emphasizing rob
      - Smaller ‘λ’ for faster response.
      - Larger ‘λ’ for smoother, more stable response.
 3. **Calculate PID Gains:**
-   - \( Kp = \tau / (K(\lambda + L)) \)
-   - \( Ki = Kp / \tau \)
-   - \( Kd = Kp \cdot (L / (\lambda + L)) \)
+   - $\( Kp = \tau / (K(\lambda + L)) \)$
+   - $\( Ki = Kp / \tau \)$
+   - $\( Kd = Kp \cdot (L / (\lambda + L)) \)$
 
 #### **Strengths**
 - Highly robust and flexible.

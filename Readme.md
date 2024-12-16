@@ -96,34 +96,34 @@ The library implements four distinct auto-tuning algorithms:
 1. **Ziegler-Nichols**:
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
-     - $`\( K_p = 0.6 \cdot Ku \)`$
-     - $`\( K_i = \frac{2 \cdot K_p}{Tu} \)`$
+     - $\( K_p = 0.6 \cdot Ku \)$
+     - $\( K_i = \frac{2 \cdot K_p}{Tu} \)$
      - $\( K_d = \frac{K_p \cdot Tu}{8} \)$
 
 2. **Cohen-Coon**:
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
-     - \( K_p = 1.35 \cdot Ku \)
-     - \( K_i = \frac{K_p}{2.5 \cdot Tu} \)
-     - \( K_d = 0.37 \cdot K_p \cdot Tu \)
+     - $\( K_p = 1.35 \cdot Ku \)$
+     - $\( K_i = \frac{K_p}{2.5 \cdot Tu} \)$
+     - $\( K_d = 0.37 \cdot K_p \cdot Tu \)$
 
 3. **Relay Feedback**:
    - Uses oscillations induced by a relay to compute parameters:
-     - \( K_p = 0.6 \cdot Ku \)
-     - \( K_i = \frac{1.2 \cdot K_p}{Tu} \)
-     - \( K_d = 0.075 \cdot K_p \cdot Tu \)
+     - $\( K_p = 0.6 \cdot Ku \)$
+     - $\( K_i = \frac{1.2 \cdot K_p}{Tu} \)$
+     - $\( K_d = 0.075 \cdot K_p \cdot Tu \)$
 
 4. **IMC (Internal Model Control)**:
-   - Incorporates a smoothing factor (\( \lambda \)) to adjust response speed:
-     - \( K_p = \frac{Ku}{\lambda + Tu} \)
-     - \( K_i = \frac{K_p}{\lambda + Tu} \)
-     - \( K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} \)
+   - Incorporates a smoothing factor ($\( \lambda \)$) to adjust response speed:
+     - $\( K_p = \frac{Ku}{\lambda + Tu} \)$
+     - $\( K_i = \frac{K_p}{\lambda + Tu} \)$
+     - $\( K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} \)$
 
 ## Signal Filtering
 
 Filters smooth inputs and outputs using an exponential moving average:
-\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]
-- \( \alpha \): Responsiveness of the filter (range: 0.01–1.0).
+$\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]$
+- $\( \alpha \)$: Responsiveness of the filter (range: 0.01–1.0).
 
 ## Example Applications
 
