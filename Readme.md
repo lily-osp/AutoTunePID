@@ -114,7 +114,7 @@ The library implements four distinct auto-tuning algorithms:
      - $\( K_d = 0.075 \cdot K_p \cdot Tu \)$
 
 4. **IMC (Internal Model Control)**:
-   - Incorporates a smoothing factor ($\( \lambda \)$) to adjust response speed:
+   - Incorporates a smoothing factor ('λ') to adjust response speed:
      - $\( K_p = \frac{Ku}{\lambda + Tu} \)$
      - $\( K_i = \frac{K_p}{\lambda + Tu} \)$
      - $\( K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} \)$
@@ -122,7 +122,7 @@ The library implements four distinct auto-tuning algorithms:
 ## Signal Filtering
 
 Filters smooth inputs and outputs using an exponential moving average:
-$\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]$
+- $\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]$
 - $\( \alpha \)$: Responsiveness of the filter (range: 0.01–1.0).
 
 ## Example Applications
