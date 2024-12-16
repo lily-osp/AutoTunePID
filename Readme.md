@@ -96,9 +96,9 @@ The library implements four distinct auto-tuning algorithms:
 1. **Ziegler-Nichols**:
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
-     - \( K_p = 0.6 \cdot Ku \)
-     - \( K_i = \frac{2 \cdot K_p}{Tu} \)
-     - \( K_d = \frac{K_p \cdot Tu}{8} \)
+     - $`\( K_p = 0.6 \cdot Ku \)`$
+     - $`\( K_i = \frac{2 \cdot K_p}{Tu} \)`$
+     - $\( K_d = \frac{K_p \cdot Tu}{8} \)$
 
 2. **Cohen-Coon**:
    - Alternative multipliers provide better transient response.
