@@ -4,32 +4,32 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 
 ## Features
 
-- **Advanced PID Control Implementation**
-  - Real-time PID calculations with configurable update intervals
-  - Constrained output range for system protection
-  - Support for both auto-tuning and manual parameter configuration
+- **Comprehensive PID Control**
+  - Real-time PID calculations with configurable update intervals.
+  - Constrained output range to ensure system safety.
+  - Support for both auto-tuning and manual parameter configuration.
 
-- **Multiple Auto-Tuning Methods**
-  - Ziegler-Nichols method
-  - Cohen-Coon method
-  - Manual tuning capability with direct gain settings
+- **Multiple Auto-Tuning Methods**:
+  - **Ziegler-Nichols**: Determines ultimate gain (Ku) and oscillation period (Tu) using observed output extremes.
+  - **Cohen-Coon**: Fine-tunes Ku and Tu with alternative multipliers for better initial performance.
+  - **Relay Feedback**: Identifies Ku and Tu via relay oscillations, suited for systems without steady-state errors.
+  - **IMC (Internal Model Control)**: Balances system robustness and responsiveness using a lambda tuning parameter.
 
-- **Signal Processing**
-  - Configurable input signal filtering
-  - Output smoothing capabilities
-  - Exponential moving average filters with adjustable alpha values
+- **Signal Filtering**
+  - Configurable input and output signal filters using exponential moving averages.
+  - Adjustable alpha values for filter responsiveness (range: 0.01–1.0).
 
 - **Safety and Reliability**
-  - Constrained output values
-  - Fixed interval updates
-  - Protected filter parameters
+  - Output values are constrained within specified bounds.
+  - Fixed interval updates ensure stability.
+  - Protected filter parameters to prevent invalid configurations.
 
 ## Installation
 
-1. Download the latest release from GitHub
-2. In Arduino IDE: Sketch > Include Library > Add .ZIP Library
-3. Select the downloaded file
-4. Restart Arduino IDE
+1. Download the library as a ZIP file
+2. In the Arduino IDE, go to Sketch > Include Library > Add .ZIP Library
+3. Select the downloaded ZIP file
+4. Restart the Arduino IDE
 
 ## Quick Start
 
@@ -40,15 +40,14 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 AutoTunePID pid(0, 255, ZieglerNichols);
 
 void setup() {
-    // Configure controller
-    pid.setSetpoint(100.0);
-    pid.enableInputFilter(0.1);  // Optional: Enable input filtering
+    pid.setSetpoint(100.0); // Target setpoint
+    pid.enableInputFilter(0.1); // Optional input filtering
 }
 
 void loop() {
-    float input = analogRead(A0);
-    pid.update(input);
-    analogWrite(PWM_PIN, pid.getOutput());
+    float input = analogRead(A0); // Read input
+    pid.update(input); // Update the PID controller
+    analogWrite(PWM_PIN, pid.getOutput()); // Write output
 }
 ```
 
@@ -90,51 +89,58 @@ float getKi();
 float getKd();
 ```
 
-## Advanced Usage
+## Advanced Auto-Tuning Methods
 
-### Auto-Tuning Process
+The library implements four distinct auto-tuning algorithms:
 
-The library implements two auto-tuning methods:
+1. **Ziegler-Nichols**:
+   - Oscillates the system to determine Ku and Tu based on output extremes.
+   - Calculates PID gains:
+     - \( K_p = 0.6 \cdot Ku \)
+     - \( K_i = \frac{2 \cdot K_p}{Tu} \)
+     - \( K_d = \frac{K_p \cdot Tu}{8} \)
 
-1. **Ziegler-Nichols Method**
-   - Determines ultimate gain (Ku) and oscillation period (Tu)
-   - Calculates parameters:
-     - Kp = 0.6 * Ku
-     - Ki = 2 * Kp / Tu
-     - Kd = Kp * Tu / 8
+2. **Cohen-Coon**:
+   - Alternative multipliers provide better transient response.
+   - Gains are calculated as:
+     - \( K_p = 1.35 \cdot Ku \)
+     - \( K_i = \frac{K_p}{2.5 \cdot Tu} \)
+     - \( K_d = 0.37 \cdot K_p \cdot Tu \)
 
-2. **Cohen-Coon Method**
-   - Uses similar principles but with different multipliers
-   - Calculates parameters:
-     - Kp = 1.35 * Ku
-     - Ki = Kp / (2.5 * Tu)
-     - Kd = 0.37 * Kp * Tu
+3. **Relay Feedback**:
+   - Uses oscillations induced by a relay to compute parameters:
+     - \( K_p = 0.6 \cdot Ku \)
+     - \( K_i = \frac{1.2 \cdot K_p}{Tu} \)
+     - \( K_d = 0.075 \cdot K_p \cdot Tu \)
 
-### Signal Filtering
+4. **IMC (Internal Model Control)**:
+   - Incorporates a smoothing factor (\( \lambda \)) to adjust response speed:
+     - \( K_p = \frac{Ku}{\lambda + Tu} \)
+     - \( K_i = \frac{K_p}{\lambda + Tu} \)
+     - \( K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} \)
 
-Input and output filters use an exponential moving average:
-```cpp
-filteredValue = (alpha * input) + ((1 - alpha) * filteredValue)
-```
-where `alpha` determines the filter's responsiveness (0.01-1.0)
+## Signal Filtering
 
-## Application Examples
+Filters smooth inputs and outputs using an exponential moving average:
+\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]
+- \( \alpha \): Responsiveness of the filter (range: 0.01–1.0).
 
-### Temperature Control System
+## Example Applications
+
+### Temperature Control
 ```cpp
 #include <AutoTunePID.h>
-
-AutoTunePID tempController(0, 255, ZieglerNichols);
+AutoTunePID tempController(0, 255, IMC);
 
 void setup() {
-    tempController.setSetpoint(75.0);  // 75°C target
-    tempController.enableInputFilter(0.1);  // Smooth temperature readings
-    tempController.enableOutputFilter(0.2); // Smooth heater control
+    tempController.setSetpoint(75.0);  // Target temperature
+    tempController.enableInputFilter(0.1);
+    tempController.enableOutputFilter(0.2);
 }
 
 void loop() {
-    float currentTemp = readTemperature();
-    tempController.update(currentTemp);
+    float temp = readTemperature();
+    tempController.update(temp);
     analogWrite(HEATER_PIN, tempController.getOutput());
     delay(100);
 }
@@ -143,18 +149,17 @@ void loop() {
 ### Motor Speed Control
 ```cpp
 #include <AutoTunePID.h>
-
-AutoTunePID speedController(0, 255, CohenCoon);
+AutoTunePID motorController(0, 255, CohenCoon);
 
 void setup() {
-    speedController.setSetpoint(1000);  // 1000 RPM target
-    speedController.enableInputFilter(0.2);
+    motorController.setSetpoint(1500); // Target RPM
+    motorController.enableInputFilter(0.2);
 }
 
 void loop() {
-    float currentSpeed = readEncoderSpeed();
-    speedController.update(currentSpeed);
-    analogWrite(MOTOR_PIN, speedController.getOutput());
+    float rpm = readEncoderSpeed();
+    motorController.update(rpm);
+    analogWrite(MOTOR_PIN, motorController.getOutput());
     delay(100);
 }
 ```
@@ -163,13 +168,14 @@ void loop() {
 
 - Update interval fixed at 100ms for stability
 - Filter alpha values impact system responsiveness
-- Auto-tuning duration affects parameter accuracy
-- Memory usage: ~40 bytes for instance variables
+- Auto-tuning duration configurable (default: 5 seconds).
+- Memory footprint optimized (~40 bytes per instance).
 
 ## Detailed explanation
 
 - for more detailed about the algorithms used on the library you can read [here](info/explanation.md)
 - for more detailed about the library usage you can read [here](info/usage.md)
+- for more detailed about the how to do manual tuning you can read [here](info/manual.md)
 
 ## Contributing
 
