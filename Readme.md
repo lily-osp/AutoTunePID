@@ -173,9 +173,9 @@ void loop() {
 
 ## Detailed explanation
 
-- for more detailed about the algorithms used on the library you can read [here](info/explanation.md)
-- for more detailed about the library usage you can read [here](info/usage.md)
-- for more detailed about the how to do manual tuning you can read [here](info/manual.md)
+- for more detailed about the algorithms used on the library you can read [here](docs/explanation.md)
+- for more detailed about the library usage you can read [here](docs/usage.md)
+- for more detailed about the how to do manual tuning you can read [here](docs/manual.md)
 
 ## Contributing
 
