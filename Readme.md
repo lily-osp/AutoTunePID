@@ -5,21 +5,25 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 ## Features
 
 - **Comprehensive PID Control**
+  
   - Real-time PID calculations with configurable update intervals.
   - Constrained output range to ensure system safety.
   - Support for both auto-tuning and manual parameter configuration.
 
 - **Multiple Auto-Tuning Methods**:
+  
   - **Ziegler-Nichols**: Determines ultimate gain (Ku) and oscillation period (Tu) using observed output extremes.
   - **Cohen-Coon**: Fine-tunes Ku and Tu with alternative multipliers for better initial performance.
   - **Relay Feedback**: Identifies Ku and Tu via relay oscillations, suited for systems without steady-state errors.
   - **IMC (Internal Model Control)**: Balances system robustness and responsiveness using a lambda tuning parameter.
 
 - **Signal Filtering**
+  
   - Configurable input and output signal filters using exponential moving averages.
   - Adjustable alpha values for filter responsiveness (range: 0.01–1.0).
 
 - **Safety and Reliability**
+  
   - Output values are constrained within specified bounds.
   - Fixed interval updates ensure stability.
   - Protected filter parameters to prevent invalid configurations.
@@ -40,14 +44,14 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 AutoTunePID pid(0, 255, ZieglerNichols);
 
 void setup() {
-    pid.setSetpoint(100.0); // Target setpoint
-    pid.enableInputFilter(0.1); // Optional input filtering
+  pid.setSetpoint(100.0); // Target setpoint
+  pid.enableInputFilter(0.1); // Optional input filtering
 }
 
 void loop() {
-    float input = analogRead(A0); // Read input
-    pid.update(input); // Update the PID controller
-    analogWrite(PWM_PIN, pid.getOutput()); // Write output
+  float input = analogRead(A0); // Read input
+  pid.update(input); // Update the PID controller
+  analogWrite(PWM_PIN, pid.getOutput()); // Write output
 }
 ```
 
@@ -56,14 +60,17 @@ void loop() {
 ### Core Functions
 
 #### Initialization
+
 ```cpp
 AutoTunePID(float minOutput, float maxOutput, TuningMethod method = ZieglerNichols);
 ```
+
 - `minOutput`: Lower bound for controller output
 - `maxOutput`: Upper bound for controller output
 - `method`: Auto-tuning method selection
 
 #### Control Configuration
+
 ```cpp
 void setSetpoint(float setpoint);
 void setTuningMethod(TuningMethod method);
@@ -71,18 +78,21 @@ void setManualGains(float kp, float ki, float kd);
 ```
 
 #### Signal Filtering
+
 ```cpp
-void enableInputFilter(float alpha);   // alpha range: 0.01-1.0
-void enableOutputFilter(float alpha);  // alpha range: 0.01-1.0
+void enableInputFilter(float alpha);  // alpha range: 0.01-1.0
+void enableOutputFilter(float alpha); // alpha range: 0.01-1.0
 ```
 
 #### Runtime Operations
+
 ```cpp
-void update(float currentInput);  // Update at minimum 100ms intervals
+void update(float currentInput); // Update at minimum 100ms intervals
 float getOutput();
 ```
 
 #### Parameter Access
+
 ```cpp
 float getKp();
 float getKi();
@@ -94,73 +104,80 @@ float getKd();
 The library implements four distinct auto-tuning algorithms:
 
 1. **Ziegler-Nichols**:
+   
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
-     - $\( K_p = 0.6 \cdot Ku \)$
-     - $\( K_i = \frac{2 \cdot K_p}{Tu} \)$
-     - $\( K_d = \frac{K_p \cdot Tu}{8} \)$
+   - $ K_p = 0.6 \cdot Ku $
+   - $ K_i = \frac{2 \cdot K_p}{Tu} $
+   - $ K_d = \frac{K_p \cdot Tu}{8} $
 
 2. **Cohen-Coon**:
+   
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
-     - $\( K_p = 1.35 \cdot Ku \)$
-     - $\( K_i = \frac{K_p}{2.5 \cdot Tu} \)$
-     - $\( K_d = 0.37 \cdot K_p \cdot Tu \)$
+   - $ K_p = 1.35 \cdot Ku $
+   - $ K_i = \frac{K_p}{2.5 \cdot Tu} $
+   - $ K_d = 0.37 \cdot K_p \cdot Tu $
 
 3. **Relay Feedback**:
+   
    - Uses oscillations induced by a relay to compute parameters:
-     - $\( K_p = 0.6 \cdot Ku \)$
-     - $\( K_i = \frac{1.2 \cdot K_p}{Tu} \)$
-     - $\( K_d = 0.075 \cdot K_p \cdot Tu \)$
+   - $ K_p = 0.6 \cdot Ku $
+   - $ K_i = \frac{1.2 \cdot K_p}{Tu} $
+   - $ K_d = 0.075 \cdot K_p \cdot Tu $
 
 4. **IMC (Internal Model Control)**:
+   
    - Incorporates a smoothing factor ('λ') to adjust response speed:
-     - $\( K_p = \frac{Ku}{\lambda + Tu} \)$
-     - $\( K_i = \frac{K_p}{\lambda + Tu} \)$
-     - $\( K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} \)$
+   - $ K_p = \frac{Ku}{\lambda + Tu} $
+   - $ K_i = \frac{K_p}{\lambda + Tu} $
+   - $ K_d = K_p \cdot \frac{Tu \cdot \lambda}{\lambda + Tu} $
 
 ## Signal Filtering
 
 Filters smooth inputs and outputs using an exponential moving average:
-- $\[ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) \]$
-- $\( \alpha \)$: Responsiveness of the filter (range: 0.01–1.0).
+
+- $\text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue})$
+- $ \alpha $: Responsiveness of the filter (range: 0.01–1.0).
 
 ## Example Applications
 
 ### Temperature Control
+
 ```cpp
 #include <AutoTunePID.h>
 AutoTunePID tempController(0, 255, IMC);
 
 void setup() {
-    tempController.setSetpoint(75.0);  // Target temperature
-    tempController.enableInputFilter(0.1);
-    tempController.enableOutputFilter(0.2);
+  tempController.setSetpoint(75.0); // Target temperature
+  tempController.enableInputFilter(0.1);
+  tempController.enableOutputFilter(0.2);
 }
 
 void loop() {
-    float temp = readTemperature();
-    tempController.update(temp);
-    analogWrite(HEATER_PIN, tempController.getOutput());
-    delay(100);
+  float temp = readTemperature();
+  tempController.update(temp);
+  analogWrite(HEATER_PIN, tempController.getOutput());
+  delay(100);
 }
 ```
 
 ### Motor Speed Control
+
 ```cpp
 #include <AutoTunePID.h>
 AutoTunePID motorController(0, 255, CohenCoon);
 
 void setup() {
-    motorController.setSetpoint(1500); // Target RPM
-    motorController.enableInputFilter(0.2);
+  motorController.setSetpoint(1500); // Target RPM
+  motorController.enableInputFilter(0.2);
 }
 
 void loop() {
-    float rpm = readEncoderSpeed();
-    motorController.update(rpm);
-    analogWrite(MOTOR_PIN, motorController.getOutput());
-    delay(100);
+  float rpm = readEncoderSpeed();
+  motorController.update(rpm);
+  analogWrite(MOTOR_PIN, motorController.getOutput());
+  delay(100);
 }
 ```
 
