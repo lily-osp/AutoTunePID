@@ -1,64 +1,52 @@
-// Example 3: Manual Tuning with Switchable Modes
-// This example allows switching between auto and manual tuning via Serial commands
-
+// Example 5: Manual Tuning with Real-time Adjustment
 #include "AutoTunePID.h"
 
 const int PROCESS_INPUT_PIN = A0;
-const int PROCESS_OUTPUT_PIN = 11;
+const int PROCESS_OUTPUT_PIN = 9;
+const int KP_POT_PIN = A1;
+const int KI_POT_PIN = A2;
+const int KD_POT_PIN = A3;
+const float SAMPLE_TIME_MS = 100;
 
-AutoTunePID pid(0, 255, ZieglerNichols);
-String command;
+float processValue = 0;
+AutoTunePID pid(0, 255, TuningMethod::Manual);
 
-void setup() {
-  Serial.begin(115200);
-  pinMode(PROCESS_OUTPUT_PIN, OUTPUT);
+void setup()
+{
+    Serial.begin(115200);
+    pinMode(PROCESS_OUTPUT_PIN, OUTPUT);
 
-  pid.setSetpoint(500); // Example setpoint
-  Serial.println("Commands: 'auto' for auto-tuning, 'manual Kp Ki Kd' for manual tuning");
+    pid.setSetpoint(50.0);
+    pid.enableInputFilter(0.1);
+    pid.enableOutputFilter(0.1);
 }
 
-void loop() {
-  // Check for serial commands
-  if (Serial.available()) {
-    command = Serial.readStringUntil('\n');
-    processCommand(command);
-  }
-
-  float processValue = analogRead(PROCESS_INPUT_PIN);
-  pid.update(processValue);
-  float output = pid.getOutput();
-  analogWrite(PROCESS_OUTPUT_PIN, output);
-
-  // Print status every second
-  static unsigned long lastPrint = 0;
-  if (millis() - lastPrint >= 1000) {
-    printStatus(processValue, output);
-    lastPrint = millis();
-  }
-}
-
-void processCommand(String cmd) {
-  if (cmd.startsWith("auto")) {
-    pid.setTuningMethod(ZieglerNichols);
-    Serial.println("Switching to auto-tuning");
-  }
-  else if (cmd.startsWith("manual")) {
-    // Parse manual PID values: "manual 2.0 0.5 0.1"
-    float kp = cmd.substring(7).toFloat();
-    int ki_start = cmd.indexOf(' ', 7) + 1;
-    float ki = cmd.substring(ki_start).toFloat();
-    int kd_start = cmd.indexOf(' ', ki_start) + 1;
-    float kd = cmd.substring(kd_start).toFloat();
+void loop()
+{
+    // Read PID gains from potentiometers
+    float kp = map(analogRead(KP_POT_PIN), 0, 1023, 0, 100) / 10.0; // 0-10.0
+    float ki = map(analogRead(KI_POT_PIN), 0, 1023, 0, 1000) / 1000.0; // 0-1.0
+    float kd = map(analogRead(KD_POT_PIN), 0, 1023, 0, 2000) / 100.0; // 0-20.0
 
     pid.setManualGains(kp, ki, kd);
-    Serial.println("Switching to manual tuning");
-  }
-}
 
-void printStatus(float input, float output) {
-  Serial.print("Input: "); Serial.print(input);
-  Serial.print(" Output: "); Serial.print(output);
-  Serial.print(" Kp: "); Serial.print(pid.getKp());
-  Serial.print(" Ki: "); Serial.print(pid.getKi());
-  Serial.print(" Kd: "); Serial.println(pid.getKd());
+    processValue = analogRead(PROCESS_INPUT_PIN);
+    pid.update(processValue);
+    analogWrite(PROCESS_OUTPUT_PIN, pid.getOutput());
+
+    // Print data with current gains
+    Serial.print("PV:");
+    Serial.print(processValue);
+    Serial.print(" SP:");
+    Serial.print(pid.getSetpoint());
+    Serial.print(" OUT:");
+    Serial.print(pid.getOutput());
+    Serial.print(" Kp:");
+    Serial.print(kp);
+    Serial.print(" Ki:");
+    Serial.print(ki);
+    Serial.print(" Kd:");
+    Serial.println(kd);
+
+    delay(SAMPLE_TIME_MS);
 }
