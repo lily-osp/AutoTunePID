@@ -42,6 +42,9 @@ public:
     float getKp() const { return _kp; }
     float getKi() const { return _ki; }
     float getKd() const { return _kd; }
+    float getKu() const { return _ultimateGain; }
+    float getTu() const { return _oscillationPeriod; }
+    float getSetpoint() const { return _setpoint; }
     bool isTuning() const { return _tuningState != TuningState::Complete; }
 
 private:
