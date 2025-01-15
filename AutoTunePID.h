@@ -53,6 +53,11 @@ public:
     float getTu() const { return _oscillationPeriod; } // Get the oscillation period (Tu)
     float getSetpoint() const { return _setpoint; } // Get the current setpoint
 
+    // New methods for amplitude, last input, and peak
+    float getAmplitude() const; // Get the amplitude of oscillations
+    float getLastInput() const { return _lastInput; } // Get the last input value
+    float getPeak(int index) const; // Get the peak value at the specified index
+
 private:
     // PID computation
     void computePID(); // Compute the PID output

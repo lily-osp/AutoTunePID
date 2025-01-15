@@ -195,6 +195,26 @@ void AutoTunePID::performAutoTune(float currentInput)
     }
 }
 
+// Get the amplitude of oscillations
+float AutoTunePID::getAmplitude() const
+{
+    if (_peakCount < 2)
+        return 0.0f; // Not enough peaks to calculate amplitude
+    float amplitude = 0;
+    for (int i = 1; i < _peakCount; i++) {
+        amplitude += abs(_peaks[i] - _peaks[i - 1]);
+    }
+    return amplitude / (_peakCount - 1);
+}
+
+// Get the peak value at the specified index
+float AutoTunePID::getPeak(int index) const
+{
+    if (index < 0 || index >= _peakCount)
+        return 0.0f; // Invalid index
+    return _peaks[index];
+}
+
 // Calculate PID gains using Ziegler-Nichols method
 void AutoTunePID::calculateZieglerNicholsGains()
 {
