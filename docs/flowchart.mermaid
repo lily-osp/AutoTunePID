@@ -1,87 +1,125 @@
+---
+config:
+  layout: elk
+---
 flowchart TD
-    Start([Start]) --> Init[Initialize AutoTunePID]
-    Init --> Config[Configure Parameters]
-
-    subgraph Configuration
-        Config --> SetMethod[Set Tuning Method]
-        Config --> SetSetpoint[Set Setpoint]
-        Config --> SetFilters[Configure Filters]
-        Config --> SetDuration[Set Tuning Duration]
-    end
-
-    SetMethod --> CheckMode{Check Mode}
-
-    CheckMode -->|Manual| ManualPath[Manual Mode]
-    ManualPath --> ReadGains[Read Manual Gains]
-    ReadGains --> UpdatePID
-
-    CheckMode -->|Auto| AutoPath[Auto-tuning Mode]
-
-    subgraph AutoTuning
-        AutoPath --> CheckState{Check Tuning State}
-
-        CheckState -->|Initial| InitTuning[Initialize Tuning]
-        InitTuning --> ResetVars[Reset Variables]
-        ResetVars --> StartTuning[Start Tuning Process]
-
-        CheckState -->|Oscillating| ProcessTuning[Process Tuning]
-        ProcessTuning --> DetectPeaks[Detect Peaks]
-        DetectPeaks --> CollectData[Collect Oscillation Data]
-        CollectData --> CheckDuration{Check Duration}
-
-        CheckDuration -->|Not Complete| Continue[Continue Tuning]
-        Continue --> ProcessTuning
-
-        CheckDuration -->|Complete| FinalizeTuning[Finalize Tuning]
-
-        FinalizeTuning --> SelectMethod{Select Tuning Method}
-        SelectMethod -->|Ziegler-Nichols| ZN[Calculate ZN Gains]
-        SelectMethod -->|Cohen-Coon| CC[Calculate CC Gains]
-        SelectMethod -->|Relay Feedback| RF[Calculate RF Gains]
-        SelectMethod -->|IMC| IMC[Calculate IMC Gains]
-
-        ZN & CC & RF & IMC --> SetGains[Set Final PID Gains]
-    end
-
-    SetGains --> UpdatePID[Update PID Controller]
-
-    subgraph PIDComputation
-        UpdatePID --> ReadInput[Read Input]
-        ReadInput --> ApplyInputFilter{Input Filter Enabled?}
-
-        ApplyInputFilter -->|Yes| FilterInput[Apply Input Filter]
-        ApplyInputFilter -->|No| CalcError[Calculate Error]
-        FilterInput --> CalcError
-
-        CalcError --> UpdateTerms[Update PID Terms]
-        UpdateTerms --> ComputeOutput[Compute Output]
-
-        ComputeOutput --> ApplyOutputFilter{Output Filter Enabled?}
-        ApplyOutputFilter -->|Yes| FilterOutput[Apply Output Filter]
-        ApplyOutputFilter -->|No| LimitOutput[Limit Output]
-        FilterOutput --> LimitOutput
-    end
-
-    LimitOutput --> OutputReady[Output Ready]
-    OutputReady --> Loop{Continue?}
-
-    Loop -->|Yes| CheckMode
-    Loop -->|No| End([End])
-
-    subgraph Monitoring
-        direction TB
-        OutputReady --> Monitor[Monitor Process]
-        Monitor --> UpdateStats[Update Statistics]
-        UpdateStats --> LogData[Log Data]
-    end
-
-    %% Styling
-    classDef configNode fill:#e1f5fe,stroke:#01579b
-    classDef tuningNode fill:#fff3e0,stroke:#e65100
-    classDef pidNode fill:#e8f5e9,stroke:#1b5e20
-    classDef monitorNode fill:#f3e5f5,stroke:#4a148c
-
-    class Config,SetMethod,SetSetpoint,SetFilters,SetDuration configNode
-    class AutoPath,ProcessTuning,DetectPeaks,CollectData,FinalizeTuning,SetGains tuningNode
-    class UpdatePID,ReadInput,CalcError,UpdateTerms,ComputeOutput,LimitOutput pidNode
-    class Monitor,UpdateStats,LogData monitorNode
+    A(["Start"]) --> B["Initialize PID Controller"]
+    B --> C["Set Output Limits"]
+    C --> D["Set Tuning Method"]
+    D --> E{"Enable Input Filter?"}
+    E -- Yes --> F["Set Input Filter Alpha"]
+    E -- No --> G{"Enable Output Filter?"}
+    F --> G
+    G -- Yes --> H["Set Output Filter Alpha"]
+    G -- No --> I{"Enable Anti-Windup?"}
+    H --> I
+    I -- Yes --> J["Set Anti-Windup Threshold"]
+    I -- No --> K["Set Setpoint"]
+    J --> K
+    K --> L{"Manual or Auto-Tuning?"}
+    L -- Manual --> M["Set Manual Gains"]
+    M --> N["Enter Runtime Loop"]
+    L -- "Auto-Tuning" --> O["Start Auto-Tuning Process"]
+    O --> P["Reset Variables"]
+    P --> Q["Initialize Timers"]
+    Q --> R["Apply Relay Output"]
+    R --> S["Monitor System Response"]
+    S --> T["Detect Peaks"]
+    T --> U["Store Peak Data"]
+    U --> V{"Enough Data Collected?"}
+    V -- No --> R
+    V -- Yes --> W["Analyze Data"]
+    W --> X["Select Tuning Method"]
+    X -- "Ziegler-Nichols" --> Y1["Calculate Ziegler-Nichols Gains"]
+    X -- "Cohen-Coon" --> Y2["Calculate Cohen-Coon Gains"]
+    X -- Relay Feedback --> Y3["Calculate Relay Feedback Gains"]
+    X -- IMC --> Y4["Calculate IMC Gains"]
+    X -- "Tyreus-Luyben" --> Y5["Calculate Tyreus-Luyben Gains"]
+    Y1 --> Z["Validate Gains"]
+    Y2 --> Z
+    Y3 --> Z
+    Y4 --> Z
+    Y5 --> Z
+    Z --> AA["Apply Gains to PID Controller"]
+    AA --> N
+    N --> AB["Read Input"]
+    AB --> AC{"Apply Input Filter?"}
+    AC -- Yes --> AD["Filter Input"]
+    AC -- No --> AE["Calculate Error"]
+    AD --> AE
+    AE --> AF["Calculate Proportional Term"]
+    AF --> AG["Calculate Integral Term"]
+    AG --> AH{"Apply Anti-Windup?"}
+    AH -- Yes --> AI["Constrain Integral Term"]
+    AH -- No --> AJ["Calculate Derivative Term"]
+    AI --> AJ
+    AJ --> AK["Sum PID Terms"]
+    AK --> AL{"Apply Output Filter?"}
+    AL -- Yes --> AM["Filter Output"]
+    AL -- No --> AN["Limit Output to Min/Max"]
+    AM --> AN
+    AN --> AO["Update Output"]
+    AO --> AP{"Continue Operation?"}
+    AP -- Yes --> AB
+    AP -- No --> AQ(["End"])
+     A:::start
+     B:::init
+     C:::init
+     D:::init
+     E:::decision
+     F:::filter
+     G:::decision
+     H:::filter
+     I:::decision
+     J:::antiwindup
+     K:::init
+     M:::manual
+     N:::runtime
+     O:::autotune
+     P:::autotune
+     Q:::autotune
+     R:::autotune
+     S:::autotune
+     T:::autotune
+     U:::autotune
+     V:::autotune
+     W:::autotune
+     X:::autotune
+     Y1:::autotune
+     Y1:::tuning
+     Y2:::autotune
+     Y2:::tuning
+     Y3:::autotune
+     Y3:::tuning
+     Y4:::autotune
+     Y4:::tuning
+     Y5:::autotune
+     Y5:::tuning
+     Z:::autotune
+     AA:::autotune
+     AB:::runtime
+     AC:::decision
+     AD:::filter
+     AE:::runtime
+     AF:::runtime
+     AG:::runtime
+     AH:::decision
+     AI:::antiwindup
+     AJ:::runtime
+     AK:::runtime
+     AL:::decision
+     AM:::filter
+     AN:::runtime
+     AO:::runtime
+     AP:::decision
+     AQ:::finish
+    classDef start fill:#4CAF50,color:white,stroke:#388E3C,stroke-width:2px
+    classDef init fill:#2196F3,color:white,stroke:#1976D2,stroke-width:2px
+    classDef decision fill:#FFC107,color:black,stroke:#FFA000,stroke-width:2px
+    classDef filter fill:#9C27B0,color:white,stroke:#7B1FA2,stroke-width:2px
+    classDef antiwindup fill:#E91E63,color:white,stroke:#C2185B,stroke-width:2px
+    classDef manual fill:#FF5722,color:white,stroke:#E64A19,stroke-width:2px
+    classDef autotune fill:#009688,color:white,stroke:#00796B,stroke-width:2px
+    classDef tuning fill:#673AB7,color:white,stroke:#512DA8,stroke-width:2px
+    classDef runtime fill:#03A9F4,color:white,stroke:#0288D1,stroke-width:2px
+    classDef finish fill:#F44336,color:white,stroke:#D32F2F,stroke-width:2px

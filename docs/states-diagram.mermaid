@@ -4,7 +4,7 @@ stateDiagram-v2
     state Initialization {
         [*] --> ConfigureBase: Create PID Instance
         ConfigureBase --> SetParameters: Configure Basic Parameters
-        
+
         state SetParameters {
             [*] --> SetOutputLimits: Set Min/Max Output
             SetOutputLimits --> SetTuningMethod: Select Method
@@ -12,6 +12,12 @@ stateDiagram-v2
             note right of SetFilters
                 Input Filter (α = 0.01-1.0)
                 Output Filter (α = 0.01-1.0)
+            end note
+            SetFilters --> SetAntiWindup: Configure Anti-Windup
+            note right of SetAntiWindup
+                Anti-Windup:
+                - Enable/Disable
+                - Threshold (0.0-1.0)
             end note
         }
     }
@@ -22,7 +28,7 @@ stateDiagram-v2
         [*] --> ModeSelection
         ModeSelection --> ManualControl: Manual Selected
         ModeSelection --> AutoTuning: Auto Selected
-        
+
         state ManualControl {
             [*] --> ReadManualGains: Get Kp, Ki, Kd
             ReadManualGains --> ValidateGains: Check Ranges
@@ -31,7 +37,7 @@ stateDiagram-v2
 
         state AutoTuning {
             [*] --> InitialState: Start Tuning
-            
+
             state InitialState {
                 [*] --> ResetVariables: Clear Previous Data
                 ResetVariables --> InitializeTimers: Start Timing
@@ -39,13 +45,13 @@ stateDiagram-v2
             }
 
             InitialState --> OscillationState: Begin Data Collection
-            
+
             state OscillationState {
                 [*] --> RelayControl: Apply Relay Output
                 RelayControl --> PeakDetection: Monitor Response
                 PeakDetection --> DataCollection: Store Peaks
                 DataCollection --> CheckDuration: Verify Time
-                
+
                 note right of DataCollection
                     Store:
                     - Peak values
@@ -55,47 +61,55 @@ stateDiagram-v2
             }
 
             OscillationState --> CompletionState: Duration Elapsed
-            
+
             state CompletionState {
                 [*] --> AnalyzeData: Process Collected Data
                 AnalyzeData --> MethodSelection: Choose Method
-                
+
                 state MethodSelection {
                     [*] --> ZieglerNichols
                     [*] --> CohenCoon
                     [*] --> RelayFeedback
                     [*] --> IMC
-                    
+                    [*] --> TyreusLuyben
+
                     note right of ZieglerNichols
                         Ziegler-Nichols:
-                        Kp = 0.6Ku
-                        Ki = 2Kp/Tu
-                        Kd = KpTu/8
-                    end note
-                    
-                    note right of CohenCoon
-                        Cohen-Coon:
-                        Kp = 1.35Ku
-                        Ki = Kp/(2.5Tu)
-                        Kd = 0.37KpTu
-                    end note
-                    
-                    note right of RelayFeedback
-                        Relay Feedback:
                         Kp = 0.6Ku
                         Ki = 1.2Kp/Tu
                         Kd = 0.075KpTu
                     end note
-                    
+
+                    note right of CohenCoon
+                        Cohen-Coon:
+                        Kp = 0.8Ku
+                        Ki = Kp/(0.8Tu)
+                        Kd = 0.194KpTu
+                    end note
+
+                    note right of RelayFeedback
+                        Relay Feedback:
+                        Kp = 0.5Ku
+                        Ki = 1.0Kp/Tu
+                        Kd = 0.125KpTu
+                    end note
+
                     note right of IMC
                         IMC Method:
                         λ = 0.5Tu
-                        Kp = Ku/(λ+Tu)
-                        Ki = Kp/(Tu+λ)
-                        Kd = KpTuλ/(Tu+λ)
+                        Kp = 0.4Ku
+                        Ki = Kp/(2.0λ)
+                        Kd = 0.5Kpλ
+                    end note
+
+                    note right of TyreusLuyben
+                        Tyreus-Luyben:
+                        Kp = 0.45Ku
+                        Ki = Kp/(2.2Tu)
+                        Kd = 0.0
                     end note
                 }
-                
+
                 MethodSelection --> CalculateGains: Compute PID Values
                 CalculateGains --> ValidateResults: Check Gains
             }
@@ -103,41 +117,47 @@ stateDiagram-v2
 
         AutoTuning --> PIDOperation: Tuning Complete
         ManualControl --> PIDOperation: Manual Gains Set
-        
+
         state PIDOperation {
             [*] --> InputProcessing
-            
+
             state InputProcessing {
                 [*] --> ReadInput: Get Current Value
                 ReadInput --> ApplyInputFilter: Filter If Enabled
                 ApplyInputFilter --> CalculateError: Compare to Setpoint
             }
-            
+
             InputProcessing --> TermCalculation
-            
+
             state TermCalculation {
                 [*] --> ProportionalTerm: Calculate P
                 ProportionalTerm --> IntegralTerm: Calculate I
-                IntegralTerm --> DerivativeTerm: Calculate D
+                IntegralTerm --> ApplyAntiWindup: Apply Anti-Windup
+                ApplyAntiWindup --> DerivativeTerm: Calculate D
                 DerivativeTerm --> SumTerms: Combine Terms
-                
+
                 note right of ProportionalTerm
                     P = Kp * error
                 end note
-                
+
                 note right of IntegralTerm
                     I = Ki * ∫error dt
-                    Anti-windup applied
                 end note
-                
+
+                note right of ApplyAntiWindup
+                    Anti-Windup:
+                    Constrain integral term
+                    if output is saturated
+                end note
+
                 note right of DerivativeTerm
                     D = Kd * d(error)/dt
                     Filtered derivative
                 end note
             }
-            
+
             TermCalculation --> OutputProcessing
-            
+
             state OutputProcessing {
                 [*] --> CombineOutput: Sum PID Terms
                 CombineOutput --> ApplyOutputFilter: Filter If Enabled
@@ -145,7 +165,7 @@ stateDiagram-v2
                 LimitOutput --> UpdateOutput: Set Final Output
             }
         }
-        
+
         PIDOperation --> ModeSelection: Next Cycle
     }
 

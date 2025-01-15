@@ -1,61 +1,90 @@
 # Using the AutoTunePID Library
 
-The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like Ziegler-Nichols or Cohen-Coon, as well as manual tuning options. This guide provides a detailed explanation of how to integrate and use the library effectively.
+The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC**, and **Tyreus-Luyben**, as well as manual tuning options. This guide provides a detailed explanation of how to integrate and use the library effectively.
+
+---
+
+## Table of Contents
+
+1. [Initialization](#initialization)
+2. [Setting the Setpoint](#setting-the-setpoint)
+3. [Selecting the Tuning Method](#selecting-the-tuning-method)
+4. [Manual Tuning](#manual-tuning)
+5. [Input and Output Filtering](#input-and-output-filtering)
+6. [Anti-Windup](#anti-windup)
+7. [Updating the Controller](#updating-the-controller)
+8. [Retrieving PID Gains and Output](#retrieving-pid-gains-and-output)
+9. [Auto-Tuning Behavior](#auto-tuning-behavior)
+10. [Example Sketches](#example-sketches)
+11. [Summary of Methods](#summary-of-methods)
+
+---
 
 ## Initialization
 
-To initialize the `AutoTunePID` controller, you need to specify the minimum and maximum output values for the PID controller. Additionally, you can define the tuning method, which defaults to `ZieglerNichols`.
+To initialize the `AutoTunePID` controller, you need to specify the **minimum and maximum output values** for the PID controller. Additionally, you can define the **tuning method**, which defaults to `ZieglerNichols`.
 
 ### Example
 ```cpp
 #include "AutoTunePID.h"
 
 // Create an instance of AutoTunePID with a specified output range
-AutoTunePID pidController(-255, 255, ZieglerNichols);
+AutoTunePID pidController(0, 255, TuningMethod::ZieglerNichols);
 ```
 
-In this example, the `pidController` is configured to output values between -255 and 255 using the Ziegler-Nichols tuning method.
+In this example, the `pidController` is configured to output values between **0 and 255** using the **Ziegler-Nichols** tuning method.
+
+---
 
 ## Setting the Setpoint
 
-The setpoint represents the target value that the system aims to achieve. Use `setSetpoint()` to define it.
+The **setpoint** represents the target value that the system aims to achieve. Use `setSetpoint()` to define it.
 
 ### Example
 ```cpp
 pidController.setSetpoint(100.0); // Set the target value to 100
 ```
 
-This sets the desired system state to a value of 100.
+This sets the desired system state to a value of **100**.
+
+---
 
 ## Selecting the Tuning Method
 
-The tuning method determines how the PID gains are calculated. Use `setTuningMethod()` to choose one of the following options:
+The **tuning method** determines how the PID gains are calculated. Use `setTuningMethod()` to choose one of the following options:
 
-- `ZieglerNichols`: A popular method for process control.
-- `CohenCoon`: Useful for processes with significant time delays.
-- `Manual`: For direct user-defined gains.
+- `TuningMethod::ZieglerNichols`: A popular method for process control.
+- `TuningMethod::CohenCoon`: Useful for processes with significant time delays.
+- `TuningMethod::RelayFeedback`: Automatically induces oscillations for tuning.
+- `TuningMethod::IMC`: Balances robustness and response speed.
+- `TuningMethod::TyreusLuyben`: Minimizes overshoot and improves stability.
+- `TuningMethod::Manual`: For direct user-defined gains.
 
 ### Example
 ```cpp
-pidController.setTuningMethod(CohenCoon);
+pidController.setTuningMethod(TuningMethod::CohenCoon);
 ```
 
-This sets the tuning method to Cohen-Coon for better performance in specific systems.
+This sets the tuning method to **Cohen-Coon** for better performance in systems with measurable dead time.
+
+---
 
 ## Manual Tuning
 
-If you prefer manual tuning, set the PID gains directly using `setManualGains()`.
+If you prefer **manual tuning**, set the PID gains directly using `setManualGains()`.
 
 ### Example
 ```cpp
 pidController.setManualGains(1.0, 0.5, 0.1); // Set Kp, Ki, and Kd
 ```
 
-This allows precise control over the proportional, integral, and derivative gains.
+This allows precise control over the **proportional**, **integral**, and **derivative gains**.
+
+---
 
 ## Input and Output Filtering
 
-Input and output filtering smoothens noisy signals, enhancing the controller's performance. Enable filtering and define a smoothing factor (alpha) between 0.01 and 1.0. Smaller values result in more smoothing.
+**Input and output filtering** smoothens noisy signals, enhancing the controller's performance. Enable filtering and define a smoothing factor (`alpha`) between **0.01 and 1.0**. Smaller values result in more smoothing.
 
 - `enableInputFilter(alpha)`: Smooths the input signal.
 - `enableOutputFilter(alpha)`: Smooths the output signal.
@@ -68,9 +97,24 @@ pidController.enableOutputFilter(0.3); // Apply output smoothing with alpha = 0.
 
 These functions improve stability in systems prone to noise.
 
+---
+
+## Anti-Windup
+
+**Anti-windup** prevents the integral term from accumulating excessively when the output is saturated. Use `enableAntiWindup()` to enable or disable this feature and set a threshold.
+
+### Example
+```cpp
+pidController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+```
+
+This ensures the integral term is constrained when the output approaches its limits.
+
+---
+
 ## Updating the Controller
 
-The `update()` function processes the current input and calculates the appropriate output. Call it within the control loop.
+The `update()` function processes the **current input** and calculates the appropriate **output**. Call it within the control loop.
 
 ### Example
 ```cpp
@@ -85,12 +129,16 @@ void loop() {
 
 This example continuously updates the PID output based on the sensor reading.
 
+---
+
 ## Retrieving PID Gains and Output
 
 Retrieve the computed or manually set PID gains and the current output value:
 
 - `getKp()`, `getKi()`, `getKd()`: Access the proportional, integral, and derivative gains.
 - `getOutput()`: Access the controller's current output.
+- `getKu()`: Retrieve the ultimate gain (Ku) from auto-tuning.
+- `getTu()`: Retrieve the oscillation period (Tu) from auto-tuning.
 
 ### Example
 ```cpp
@@ -105,42 +153,116 @@ Serial.print("Kd: "); Serial.println(kd);
 
 This prints the current PID parameters to the Serial Monitor.
 
+---
+
 ## Auto-Tuning Behavior
 
-When auto-tuning is enabled, the library uses either Ziegler-Nichols or Cohen-Coon methods to compute optimal gains over a specified tuning duration (default: 5000 ms). These gains are applied automatically after tuning completes.
+When **auto-tuning** is enabled, the library uses one of the supported methods (e.g., Ziegler-Nichols, Cohen-Coon, Relay Feedback, IMC, or Tyreus-Luyben) to compute optimal gains. These gains are applied automatically after tuning completes.
 
 ### Notes
 - Ensure the system can oscillate safely during the tuning process.
 - Adjust tuning duration and output limits to match your system's dynamics.
 
-## Example Sketch
+---
 
-This sketch demonstrates the full functionality of the `AutoTunePID` library:
+## Example Sketches
 
+### 1. Ziegler-Nichols Example: Temperature Control
 ```cpp
 #include "AutoTunePID.h"
-
-AutoTunePID pidController(-255, 255);
+AutoTunePID tempController(0, 255, TuningMethod::ZieglerNichols);
 
 void setup() {
-    Serial.begin(9600);
-    pidController.setSetpoint(50.0); // Set the target value
-    pidController.enableInputFilter(0.1); // Smooth input signals
-    pidController.enableOutputFilter(0.1); // Smooth output signals
+    tempController.setSetpoint(75.0); // Target temperature
+    tempController.enableInputFilter(0.1); // Enable input filtering
+    tempController.enableAntiWindup(true, 0.8); // Enable anti-windup
 }
 
 void loop() {
-    float currentInput = analogRead(A0) * (5.0 / 1023.0); // Convert to voltage
-    pidController.update(currentInput);
-
-    float output = pidController.getOutput();
-    analogWrite(3, output); // Control actuator
-
-    Serial.print("Output: "); Serial.println(output);
+    float temp = readTemperature(); // Read temperature sensor
+    tempController.update(temp); // Update PID controller
+    analogWrite(HEATER_PIN, tempController.getOutput()); // Control heater
+    delay(100);
 }
 ```
 
-This sketch integrates all key features of the library, showcasing its practical application.
+### 2. Cohen-Coon Example: Motor Speed Control
+```cpp
+#include "AutoTunePID.h"
+AutoTunePID motorController(0, 255, TuningMethod::CohenCoon);
+
+void setup() {
+    motorController.setSetpoint(1500); // Target RPM
+    motorController.enableInputFilter(0.2); // Enable input filtering
+    motorController.enableAntiWindup(true, 0.7); // Enable anti-windup
+}
+
+void loop() {
+    float rpm = readEncoderSpeed(); // Read motor speed
+    motorController.update(rpm); // Update PID controller
+    analogWrite(MOTOR_PIN, motorController.getOutput()); // Control motor
+    delay(100);
+}
+```
+
+### 3. Relay Feedback Example: Water Level Control
+```cpp
+#include "AutoTunePID.h"
+AutoTunePID waterController(0, 255, TuningMethod::RelayFeedback);
+
+void setup() {
+    waterController.setSetpoint(50.0); // Target water level
+    waterController.enableInputFilter(0.15); // Enable input filtering
+    waterController.enableAntiWindup(true, 0.9); // Enable anti-windup
+}
+
+void loop() {
+    float level = readWaterLevel(); // Read water level sensor
+    waterController.update(level); // Update PID controller
+    analogWrite(VALVE_PIN, waterController.getOutput()); // Control valve
+    delay(100);
+}
+```
+
+### 4. IMC Example: Pressure Control
+```cpp
+#include "AutoTunePID.h"
+AutoTunePID pressureController(0, 255, TuningMethod::IMC);
+
+void setup() {
+    pressureController.setSetpoint(100.0); // Target pressure
+    pressureController.enableInputFilter(0.1); // Enable input filtering
+    pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup
+}
+
+void loop() {
+    float pressure = readPressureSensor(); // Read pressure sensor
+    pressureController.update(pressure); // Update PID controller
+    analogWrite(PUMP_PIN, pressureController.getOutput()); // Control pump
+    delay(100);
+}
+```
+
+### 5. Tyreus-Luyben Example: Chemical Reactor Temperature Control
+```cpp
+#include "AutoTunePID.h"
+AutoTunePID reactorController(0, 255, TuningMethod::TyreusLuyben);
+
+void setup() {
+    reactorController.setSetpoint(80.0); // Target reactor temperature
+    reactorController.enableInputFilter(0.1); // Enable input filtering
+    reactorController.enableAntiWindup(true, 0.8); // Enable anti-windup
+}
+
+void loop() {
+    float temp = readReactorTemperature(); // Read reactor temperature
+    reactorController.update(temp); // Update PID controller
+    analogWrite(HEATER_PIN, reactorController.getOutput()); // Control heater
+    delay(100);
+}
+```
+
+---
 
 ## Summary of Methods
 
@@ -151,9 +273,10 @@ This sketch integrates all key features of the library, showcasing its practical
 | `setManualGains(float kp, ki, kd)`  | Sets PID gains manually.                     |
 | `enableInputFilter(float alpha)`    | Enables input filtering with a smoothing factor. |
 | `enableOutputFilter(float alpha)`   | Enables output filtering with a smoothing factor. |
+| `enableAntiWindup(bool, float)`     | Enables anti-windup with an optional threshold. |
 | `update(float currentInput)`        | Updates the PID controller with the current input. |
 | `getOutput()`                       | Retrieves the computed PID output.           |
 | `getKp()`, `getKi()`, `getKd()`     | Retrieves the PID gains.                     |
+| `getKu()`, `getTu()`                | Retrieves the ultimate gain and oscillation period. |
 
-Use this guide to take full advantage of the `AutoTunePID` library in your Arduino projects.
-
+---
