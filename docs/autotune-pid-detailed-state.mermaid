@@ -1,0 +1,152 @@
+stateDiagram-v2
+    [*] --> Initialization
+
+    state Initialization {
+        [*] --> ConfigureBase: Create PID Instance
+        ConfigureBase --> SetParameters: Configure Basic Parameters
+        
+        state SetParameters {
+            [*] --> SetOutputLimits: Set Min/Max Output
+            SetOutputLimits --> SetTuningMethod: Select Method
+            SetTuningMethod --> SetFilters: Configure Filters
+            note right of SetFilters
+                Input Filter (α = 0.01-1.0)
+                Output Filter (α = 0.01-1.0)
+            end note
+        }
+    }
+
+    Initialization --> OperatingMode
+
+    state OperatingMode {
+        [*] --> ModeSelection
+        ModeSelection --> ManualControl: Manual Selected
+        ModeSelection --> AutoTuning: Auto Selected
+        
+        state ManualControl {
+            [*] --> ReadManualGains: Get Kp, Ki, Kd
+            ReadManualGains --> ValidateGains: Check Ranges
+            ValidateGains --> ApplyManualGains: Set Controller
+        }
+
+        state AutoTuning {
+            [*] --> InitialState: Start Tuning
+            
+            state InitialState {
+                [*] --> ResetVariables: Clear Previous Data
+                ResetVariables --> InitializeTimers: Start Timing
+                InitializeTimers --> SetupOscillation: Prepare System
+            }
+
+            InitialState --> OscillationState: Begin Data Collection
+            
+            state OscillationState {
+                [*] --> RelayControl: Apply Relay Output
+                RelayControl --> PeakDetection: Monitor Response
+                PeakDetection --> DataCollection: Store Peaks
+                DataCollection --> CheckDuration: Verify Time
+                
+                note right of DataCollection
+                    Store:
+                    - Peak values
+                    - Time between peaks
+                    - Amplitude data
+                end note
+            }
+
+            OscillationState --> CompletionState: Duration Elapsed
+            
+            state CompletionState {
+                [*] --> AnalyzeData: Process Collected Data
+                AnalyzeData --> MethodSelection: Choose Method
+                
+                state MethodSelection {
+                    [*] --> ZieglerNichols
+                    [*] --> CohenCoon
+                    [*] --> RelayFeedback
+                    [*] --> IMC
+                    
+                    note right of ZieglerNichols
+                        Ziegler-Nichols:
+                        Kp = 0.6Ku
+                        Ki = 2Kp/Tu
+                        Kd = KpTu/8
+                    end note
+                    
+                    note right of CohenCoon
+                        Cohen-Coon:
+                        Kp = 1.35Ku
+                        Ki = Kp/(2.5Tu)
+                        Kd = 0.37KpTu
+                    end note
+                    
+                    note right of RelayFeedback
+                        Relay Feedback:
+                        Kp = 0.6Ku
+                        Ki = 1.2Kp/Tu
+                        Kd = 0.075KpTu
+                    end note
+                    
+                    note right of IMC
+                        IMC Method:
+                        λ = 0.5Tu
+                        Kp = Ku/(λ+Tu)
+                        Ki = Kp/(Tu+λ)
+                        Kd = KpTuλ/(Tu+λ)
+                    end note
+                }
+                
+                MethodSelection --> CalculateGains: Compute PID Values
+                CalculateGains --> ValidateResults: Check Gains
+            }
+        }
+
+        AutoTuning --> PIDOperation: Tuning Complete
+        ManualControl --> PIDOperation: Manual Gains Set
+        
+        state PIDOperation {
+            [*] --> InputProcessing
+            
+            state InputProcessing {
+                [*] --> ReadInput: Get Current Value
+                ReadInput --> ApplyInputFilter: Filter If Enabled
+                ApplyInputFilter --> CalculateError: Compare to Setpoint
+            }
+            
+            InputProcessing --> TermCalculation
+            
+            state TermCalculation {
+                [*] --> ProportionalTerm: Calculate P
+                ProportionalTerm --> IntegralTerm: Calculate I
+                IntegralTerm --> DerivativeTerm: Calculate D
+                DerivativeTerm --> SumTerms: Combine Terms
+                
+                note right of ProportionalTerm
+                    P = Kp * error
+                end note
+                
+                note right of IntegralTerm
+                    I = Ki * ∫error dt
+                    Anti-windup applied
+                end note
+                
+                note right of DerivativeTerm
+                    D = Kd * d(error)/dt
+                    Filtered derivative
+                end note
+            }
+            
+            TermCalculation --> OutputProcessing
+            
+            state OutputProcessing {
+                [*] --> CombineOutput: Sum PID Terms
+                CombineOutput --> ApplyOutputFilter: Filter If Enabled
+                ApplyOutputFilter --> LimitOutput: Apply Min/Max
+                LimitOutput --> UpdateOutput: Set Final Output
+            }
+        }
+        
+        PIDOperation --> ModeSelection: Next Cycle
+    }
+
+    OperatingMode --> [*]: System Stop
