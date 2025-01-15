@@ -1,62 +1,41 @@
-// Example 2: Relay Feedback Method
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
 
-const int HEATER_PIN = 9;
-const int TEMP_SENSOR_PIN = A0;
-const float SAMPLE_TIME_MS = 200;
+// Pin definitions
+const int inputPin = A0;
+const int outputPin = 9;
 
-float currentTemp = 0;
+// PID parameters
+float setpoint = 100.0;
 AutoTunePID pid(0, 255, TuningMethod::RelayFeedback);
 
 void setup()
 {
-    Serial.begin(115200);
-    pinMode(HEATER_PIN, OUTPUT);
+    Serial.begin(9600);
+    pinMode(inputPin, INPUT);
+    pinMode(outputPin, OUTPUT);
 
-    pid.setSetpoint(50.0); // Target temperature in Celsius
-    pid.enableInputFilter(0.2); // More filtering for temperature
-    pid.setTuningDuration(60000); // 60 seconds for temperature system
+    pid.setSetpoint(setpoint);
+    pid.setDataPointSize(25);
 }
 
 void loop()
 {
-    currentTemp = readTemperature();
+    float currentInput = analogRead(inputPin);
+    pid.update(currentInput);
 
-    pid.update(currentTemp);
-    analogWrite(HEATER_PIN, pid.getOutput());
+    float output = pid.getOutput();
+    analogWrite(outputPin, output);
 
-    printData();
-    delay(SAMPLE_TIME_MS);
-}
+    Serial.print("Input: ");
+    Serial.print(currentInput);
+    Serial.print(" | Output: ");
+    Serial.print(output);
+    Serial.print(" | Kp: ");
+    Serial.print(pid.getKp());
+    Serial.print(" | Ki: ");
+    Serial.print(pid.getKi());
+    Serial.print(" | Kd: ");
+    Serial.println(pid.getKd());
 
-float readTemperature()
-{
-    int rawValue = analogRead(TEMP_SENSOR_PIN);
-    return (rawValue * 5.0 / 1024.0) * 100; // Convert to Celsius
-}
-
-// printing function
-void printData()
-{
-    if (pid.isTuning()) {
-        Serial.print("Tuning - ");
-    }
-    Serial.print("PV:");
-    Serial.print(currentSpeed);
-    Serial.print(" SP:");
-    Serial.print(pid.getSetpoint());
-    Serial.print(" OUT:");
-    Serial.println(pid.getOutput());
-
-    static bool gainsReported = false;
-    if (!pid.isTuning() && !gainsReported) {
-        Serial.println("\nTuning Complete!");
-        Serial.print("Kp:");
-        Serial.println(pid.getKp(), 4);
-        Serial.print("Ki:");
-        Serial.println(pid.getKi(), 4);
-        Serial.print("Kd:");
-        Serial.println(pid.getKd(), 4);
-        gainsReported = true;
-    }
+    delay(100);
 }

@@ -6,7 +6,7 @@ const int outputPin = 9;
 
 // PID parameters
 float setpoint = 100.0;
-AutoTunePID pid(0, 255, TuningMethod::IMC);
+AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
 
 void setup()
 {
@@ -15,7 +15,8 @@ void setup()
     pinMode(outputPin, OUTPUT);
 
     pid.setSetpoint(setpoint);
-    pid.setDataPointSize(25);
+    pid.enableInputFilter(0.1); // Enable input filter with alpha = 0.1
+    pid.enableOutputFilter(0.1); // Enable output filter with alpha = 0.1
 }
 
 void loop()

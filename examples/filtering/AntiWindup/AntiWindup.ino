@@ -6,7 +6,7 @@ const int outputPin = 9;
 
 // PID parameters
 float setpoint = 100.0;
-AutoTunePID pid(0, 255, TuningMethod::IMC);
+AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
 
 void setup()
 {
@@ -15,7 +15,7 @@ void setup()
     pinMode(outputPin, OUTPUT);
 
     pid.setSetpoint(setpoint);
-    pid.setDataPointSize(25);
+    pid.enableAntiWindup(true, 0.8); // Enable anti-windup with threshold = 0.8
 }
 
 void loop()

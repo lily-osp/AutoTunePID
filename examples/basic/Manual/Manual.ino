@@ -1,52 +1,41 @@
-// Example 5: Manual Tuning with Real-time Adjustment
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
 
-const int PROCESS_INPUT_PIN = A0;
-const int PROCESS_OUTPUT_PIN = 9;
-const int KP_POT_PIN = A1;
-const int KI_POT_PIN = A2;
-const int KD_POT_PIN = A3;
-const float SAMPLE_TIME_MS = 100;
+// Pin definitions
+const int inputPin = A0;
+const int outputPin = 9;
 
-float processValue = 0;
+// PID parameters
+float setpoint = 100.0;
 AutoTunePID pid(0, 255, TuningMethod::Manual);
 
 void setup()
 {
-    Serial.begin(115200);
-    pinMode(PROCESS_OUTPUT_PIN, OUTPUT);
+    Serial.begin(9600);
+    pinMode(inputPin, INPUT);
+    pinMode(outputPin, OUTPUT);
 
-    pid.setSetpoint(50.0);
-    pid.enableInputFilter(0.1);
-    pid.enableOutputFilter(0.1);
+    pid.setSetpoint(setpoint);
+    pid.setManualGains(2.0, 0.5, 1.0); // Set manual gains (Kp, Ki, Kd)
 }
 
 void loop()
 {
-    // Read PID gains from potentiometers
-    float kp = map(analogRead(KP_POT_PIN), 0, 1023, 0, 100) / 10.0; // 0-10.0
-    float ki = map(analogRead(KI_POT_PIN), 0, 1023, 0, 1000) / 1000.0; // 0-1.0
-    float kd = map(analogRead(KD_POT_PIN), 0, 1023, 0, 2000) / 100.0; // 0-20.0
+    float currentInput = analogRead(inputPin);
+    pid.update(currentInput);
 
-    pid.setManualGains(kp, ki, kd);
+    float output = pid.getOutput();
+    analogWrite(outputPin, output);
 
-    processValue = analogRead(PROCESS_INPUT_PIN);
-    pid.update(processValue);
-    analogWrite(PROCESS_OUTPUT_PIN, pid.getOutput());
+    Serial.print("Input: ");
+    Serial.print(currentInput);
+    Serial.print(" | Output: ");
+    Serial.print(output);
+    Serial.print(" | Kp: ");
+    Serial.print(pid.getKp());
+    Serial.print(" | Ki: ");
+    Serial.print(pid.getKi());
+    Serial.print(" | Kd: ");
+    Serial.println(pid.getKd());
 
-    // Print data with current gains
-    Serial.print("PV:");
-    Serial.print(processValue);
-    Serial.print(" SP:");
-    Serial.print(pid.getSetpoint());
-    Serial.print(" OUT:");
-    Serial.print(pid.getOutput());
-    Serial.print(" Kp:");
-    Serial.print(kp);
-    Serial.print(" Ki:");
-    Serial.print(ki);
-    Serial.print(" Kd:");
-    Serial.println(kd);
-
-    delay(SAMPLE_TIME_MS);
+    delay(100);
 }

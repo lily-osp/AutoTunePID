@@ -6,7 +6,7 @@ const int outputPin = 9;
 
 // PID parameters
 float setpoint = 100.0;
-AutoTunePID pid(0, 255, TuningMethod::IMC);
+AutoTunePID pid(0, 255, TuningMethod::TyreusLuyben);
 
 void setup()
 {
