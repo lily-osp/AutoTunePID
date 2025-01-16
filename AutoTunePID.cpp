@@ -105,22 +105,32 @@ void AutoTunePID::update(float currentInput)
         return; // Maintain consistent sample time
     _lastUpdate = now;
 
-    if (_inputFilterEnabled) {
+    // Update input (with filter if enabled)
+    if (_inputFilterEnabled && _operationalMode != OperationalMode::Tune) {
         currentInput = computeFilteredValue(currentInput, _inputFilteredValue, _inputFilterAlpha);
     }
+    _input = currentInput; // Store the current input value
 
     if (_operationalMode == OperationalMode::Tune) {
         performAutoTune(currentInput);
     } else {
-        _error = _setpoint - currentInput;
-        _integral += _error;
+        _error = _setpoint - _input;
+
+        // Reset integral term if error is zero
+        if (abs(_error) < 0.001) {
+            _integral = 0;
+        } else {
+            _integral += _error;
+        }
+
         _derivative = _error - _previousError;
         computePID();
         applyAntiWindup();
         _previousError = _error;
     }
 
-    if (_outputFilterEnabled) {
+    // Update output (with filter if enabled)
+    if (_outputFilterEnabled && _operationalMode != OperationalMode::Tune) {
         _output = computeFilteredValue(_output, _outputFilteredValue, _outputFilterAlpha);
     }
 }
@@ -233,7 +243,21 @@ void AutoTunePID::calculateTyreusLuybenGains()
 
 void AutoTunePID::computePID()
 {
-    _output = (_kp * _error) + (_ki * _integral) + (_kd * _derivative);
+    // Calculate error
+    _error = _setpoint - _input;
+
+    // If error is very small, treat it as zero
+    if (abs(_error) < 0.001) {
+        _error = 0;
+    }
+
+    // Calculate PID terms
+    float P = _kp * _error;
+    float I = _ki * _integral;
+    float D = _kd * _derivative;
+
+    // Calculate output
+    _output = P + I + D;
     _output = constrain(_output, _minOutput, _maxOutput);
 }
 

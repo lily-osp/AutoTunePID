@@ -93,6 +93,7 @@ private:
     float _error, _previousError; // Current and previous error values
     float _integral, _derivative; // Integral and derivative terms
     float _output; // Current output value
+    float _input; // Current input value (e.g., sensor reading)
 
     // Anti-windup
     bool _antiWindupEnabled; // Flag to enable/disable anti-windup
