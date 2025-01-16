@@ -1,25 +1,25 @@
 # Using the AutoTunePID Library
 
-The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC**, and **Tyreus-Luyben**, as well as manual tuning options. This guide provides detailed examples for each tuning method, including proper pinouts, setpoints, **filtering**, and **anti-windup**.
+The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC**, and **Tyreus-Luyben**, as well as manual tuning options. This guide provides detailed examples for each tuning method, including proper pinouts, setpoints, **filtering**, **anti-windup**, **operational modes**, and **oscillation modes**.
 
 ---
 
 ## Table of Contents
 
-1. [Ziegler-Nichols Example with Filtering and Anti-Windup](#ziegler-nichols-example-with-filtering-and-anti-windup)
-2. [Cohen-Coon Example with Filtering and Anti-Windup](#cohen-coon-example-with-filtering-and-anti-windup)
-3. [Relay Feedback Example with Filtering and Anti-Windup](#relay-feedback-example-with-filtering-and-anti-windup)
-4. [IMC Example with Filtering and Anti-Windup](#imc-example-with-filtering-and-anti-windup)
-5. [Tyreus-Luyben Example with Filtering and Anti-Windup](#tyreus-luyben-example-with-filtering-and-anti-windup)
-6. [Manual Tuning Example with Filtering and Anti-Windup](#manual-tuning-example-with-filtering-and-anti-windup)
+1. [Ziegler-Nichols Example with Filtering, Anti-Windup, and Oscillation Modes](#ziegler-nichols-example-with-filtering-anti-windup-and-oscillation-modes)
+2. [Cohen-Coon Example with Filtering, Anti-Windup, and Oscillation Modes](#cohen-coon-example-with-filtering-anti-windup-and-oscillation-modes)
+3. [Relay Feedback Example with Filtering, Anti-Windup, and Oscillation Modes](#relay-feedback-example-with-filtering-anti-windup-and-oscillation-modes)
+4. [IMC Example with Filtering, Anti-Windup, and Oscillation Modes](#imc-example-with-filtering-anti-windup-and-oscillation-modes)
+5. [Tyreus-Luyben Example with Filtering, Anti-Windup, and Oscillation Modes](#tyreus-luyben-example-with-filtering-anti-windup-and-oscillation-modes)
+6. [Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#manual-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
 
 ---
 
-## Ziegler-Nichols Example with Filtering and Anti-Windup
+## Ziegler-Nichols Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Temperature Control System
 
-This example demonstrates how to use the **Ziegler-Nichols** tuning method for a temperature control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use the **Ziegler-Nichols** tuning method for a temperature control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Temperature Sensor)
@@ -38,6 +38,8 @@ void setup() {
     tempController.enableInputFilter(0.1);  // Enable input filtering with alpha = 0.1
     tempController.enableOutputFilter(0.1); // Enable output filtering with alpha = 0.1
     tempController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+    tempController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+    tempController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -50,11 +52,11 @@ void loop() {
 
 ---
 
-## Cohen-Coon Example with Filtering and Anti-Windup
+## Cohen-Coon Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Motor Speed Control System
 
-This example demonstrates how to use the **Cohen-Coon** tuning method for a motor speed control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use the **Cohen-Coon** tuning method for a motor speed control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Encoder or Tachometer)
@@ -73,6 +75,8 @@ void setup() {
     motorController.enableInputFilter(0.2);  // Enable input filtering with alpha = 0.2
     motorController.enableOutputFilter(0.2); // Enable output filtering with alpha = 0.2
     motorController.enableAntiWindup(true, 0.7); // Enable anti-windup with 70% threshold
+    motorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+    motorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -85,11 +89,11 @@ void loop() {
 
 ---
 
-## Relay Feedback Example with Filtering and Anti-Windup
+## Relay Feedback Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Water Level Control System
 
-This example demonstrates how to use the **Relay Feedback** tuning method for a water level control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use the **Relay Feedback** tuning method for a water level control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Water Level Sensor)
@@ -108,6 +112,8 @@ void setup() {
     waterController.enableInputFilter(0.15);  // Enable input filtering with alpha = 0.15
     waterController.enableOutputFilter(0.15); // Enable output filtering with alpha = 0.15
     waterController.enableAntiWindup(true, 0.9); // Enable anti-windup with 90% threshold
+    waterController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
+    waterController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -120,11 +126,11 @@ void loop() {
 
 ---
 
-## IMC Example with Filtering and Anti-Windup
+## IMC Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Pressure Control System
 
-This example demonstrates how to use the **IMC** tuning method for a pressure control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use the **IMC** tuning method for a pressure control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Pressure Sensor)
@@ -143,6 +149,8 @@ void setup() {
     pressureController.enableInputFilter(0.1);  // Enable input filtering with alpha = 0.1
     pressureController.enableOutputFilter(0.1); // Enable output filtering with alpha = 0.1
     pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+    pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+    pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -155,11 +163,11 @@ void loop() {
 
 ---
 
-## Tyreus-Luyben Example with Filtering and Anti-Windup
+## Tyreus-Luyben Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Chemical Reactor Temperature Control
 
-This example demonstrates how to use the **Tyreus-Luyben** tuning method for a chemical reactor temperature control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use the **Tyreus-Luyben** tuning method for a chemical reactor temperature control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Temperature Sensor)
@@ -178,6 +186,8 @@ void setup() {
     reactorController.enableInputFilter(0.1);  // Enable input filtering with alpha = 0.1
     reactorController.enableOutputFilter(0.1); // Enable output filtering with alpha = 0.1
     reactorController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+    reactorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+    reactorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -190,11 +200,11 @@ void loop() {
 
 ---
 
-## Manual Tuning Example with Filtering and Anti-Windup
+## Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Generic Control System
 
-This example demonstrates how to use **manual tuning** for a generic control system with **input and output filtering** and **anti-windup**.
+This example demonstrates how to use **manual tuning** for a generic control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
 - **Input Pin**: A0 (Sensor Input)
@@ -214,6 +224,8 @@ void setup() {
     manualController.enableInputFilter(0.1);  // Enable input filtering with alpha = 0.1
     manualController.enableOutputFilter(0.1); // Enable output filtering with alpha = 0.1
     manualController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+    manualController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+    manualController.setOperationalMode(OperationalMode::Normal); // Set operational mode to Normal
 }
 
 void loop() {
@@ -226,17 +238,15 @@ void loop() {
 
 ---
 
-## Summary of Examples with Filtering and Anti-Windup
+## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
-| Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint       | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold |
-|---------------------|------------------------------|-----------|------------|----------------|------------------|-------------------|------------------------|
-| **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C         | 0.1              | 0.1               | 80%                    |
-| **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM       | 0.2              | 0.2               | 70%                    |
-| **Relay Feedback**  | Water Level Control          | A0        | 6          | 50.0 cm        | 0.15             | 0.15              | 90%                    |
-| **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa      | 0.1              | 0.1               | 80%                    |
-| **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C         | 0.1              | 0.1               | 80%                    |
-| **Manual Tuning**   | Generic Control System       | A0        | 11         | 50.0 (Arbitrary)| 0.1              | 0.1               | 80%                    |
+| Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint       | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
+|---------------------|------------------------------|-----------|------------|----------------|------------------|-------------------|------------------------|------------------|------------------|
+| **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C         | 0.1              | 0.1               | 80%                    | Normal           | Tune             |
+| **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM       | 0.2              | 0.2               | 70%                    | Half             | Tune             |
+| **Relay Feedback**  | Water Level Control          | A0        | 6          | 50.0 cm        | 0.15             | 0.15              | 90%                    | Mild             | Tune             |
+| **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa      | 0.1              | 0.1               | 80%                    | Normal           | Tune             |
+| **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C         | 0.1              | 0.1               | 80%                    | Half             | Tune             |
+| **Manual Tuning**   | Generic Control System       | A0        | 11         | 50.0 (Arbitrary)| 0.1              | 0.1               | 80%                    | Normal           | Normal           |
 
 ---
-
-This updated `usage.md` provides **individual examples** for each tuning algorithm, including proper pinouts, setpoints, **filtering**, and **anti-windup**. Let me know if you need further adjustments!

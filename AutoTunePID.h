@@ -21,12 +21,21 @@ constexpr auto IMC = TuningMethod::IMC;
 constexpr auto TyreusLuyben = TuningMethod::TyreusLuyben;
 constexpr auto Manual = TuningMethod::Manual;
 
-// Structure to store data points for real-time tuning
-struct DataPoint {
-    float input; // Current input value
-    float setpoint; // Desired setpoint
-    float output; // Current output value
-    unsigned long timestamp; // Timestamp of the data point
+// Enumeration for operational modes
+enum class OperationalMode {
+    Normal, // Normal PID operation
+    Reverse, // Reverse PID operation (e.g., for cooling systems)
+    Hold, // Hold the PID calculations to save resources
+    Preserve, // Preserve mode: minimal calculations, keep the system responsive
+    Tune, // Tune mode: perform auto-tuning to get Tu and Ku
+    Auto // Auto mode: automatically determine the best operational mode
+};
+
+// Enumeration for oscillation modes
+enum class OscillationMode {
+    Normal, // Full oscillation (MaxOutput - MinOutput)
+    Half, // Half oscillation (1/2 MaxOutput - 1/2 MinOutput)
+    Mild // Mild oscillation (1/4 MaxOutput - 1/4 MinOutput)
 };
 
 class AutoTunePID {
@@ -40,8 +49,10 @@ public:
     void setManualGains(float kp, float ki, float kd); // Set manual PID gains
     void enableInputFilter(float alpha); // Enable input filtering with a given alpha value
     void enableOutputFilter(float alpha); // Enable output filtering with a given alpha value
-    void setDataPointSize(int size); // Set the size of the data point buffer
     void enableAntiWindup(bool enable, float threshold = 0.8f); // Enable/disable anti-windup with optional threshold
+    void setOperationalMode(OperationalMode mode); // Set the operational mode
+    void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
+    void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
 
     // Runtime methods
     void update(float currentInput); // Update the PID controller with the current input
@@ -52,11 +63,7 @@ public:
     float getKu() const { return _ultimateGain; } // Get the ultimate gain (Ku)
     float getTu() const { return _oscillationPeriod; } // Get the oscillation period (Tu)
     float getSetpoint() const { return _setpoint; } // Get the current setpoint
-
-    // New methods for amplitude, last input, and peak
-    float getAmplitude() const; // Get the amplitude of oscillations
-    float getLastInput() const { return _lastInput; } // Get the last input value
-    float getPeak(int index) const; // Get the peak value at the specified index
+    OperationalMode getOperationalMode() const { return _operationalMode; } // Get the current operational mode
 
 private:
     // PID computation
@@ -76,6 +83,9 @@ private:
     const float _minOutput; // Minimum output value
     const float _maxOutput; // Maximum output value
     TuningMethod _method; // Current tuning method
+    OperationalMode _operationalMode; // Current operational mode
+    OscillationMode _oscillationMode; // Current oscillation mode for auto-tuning
+    int _oscillationSteps; // Number of oscillation steps for auto-tuning
     float _setpoint; // Desired setpoint
 
     // PID parameters
@@ -90,17 +100,6 @@ private:
 
     // Autotuning parameters
     unsigned long _lastUpdate; // Timestamp of the last update
-    float _relayOutput; // Relay output value
-    bool _relayState; // Current state of the relay
-
-    // Oscillation detection
-    static constexpr int MAX_PEAKS = 10; // Maximum number of peaks to detect
-    float _peaks[MAX_PEAKS]; // Array to store detected peaks
-    int _peakCount; // Number of peaks detected
-    float _lastInput; // Last input value
-    bool _risingInput; // Flag to indicate if the input is rising
-
-    // Tuning results
     float _ultimateGain; // Ultimate gain (Ku)
     float _oscillationPeriod; // Oscillation period (Tu)
 
@@ -111,12 +110,6 @@ private:
     float _outputFilteredValue; // Filtered output value
     float _inputFilterAlpha; // Alpha value for input filtering
     float _outputFilterAlpha; // Alpha value for output filtering
-
-    // Data storage for real-time tuning
-    static constexpr int DEFAULT_DATA_POINT_SIZE = 25; // Default size of the data point buffer
-    DataPoint _dataPoints[DEFAULT_DATA_POINT_SIZE]; // Array to store data points
-    int _dataPointSize; // Current size of the data point buffer
-    int _dataIndex; // Index for circular buffer
 };
 
 #endif

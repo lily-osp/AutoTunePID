@@ -14,54 +14,57 @@ flowchart TD
     G -- No --> I{"Enable Anti-Windup?"}
     H --> I
     I -- Yes --> J["Set Anti-Windup Threshold"]
-    I -- No --> K["Set Setpoint"]
+    I -- No --> K{"Set Oscillation Mode?"}
     J --> K
-    K --> L{"Manual or Auto-Tuning?"}
-    L -- Manual --> M["Set Manual Gains"]
-    M --> N["Enter Runtime Loop"]
-    L -- "Auto-Tuning" --> O["Start Auto-Tuning Process"]
-    O --> P["Reset Variables"]
-    P --> Q["Initialize Timers"]
-    Q --> R["Apply Relay Output"]
-    R --> S["Monitor System Response"]
-    S --> T["Detect Peaks"]
-    T --> U["Store Peak Data"]
-    U --> V{"Enough Data Collected?"}
-    V -- No --> R
-    V -- Yes --> W["Analyze Data"]
-    W --> X["Select Tuning Method"]
-    X -- "Ziegler-Nichols" --> Y1["Calculate Ziegler-Nichols Gains"]
-    X -- "Cohen-Coon" --> Y2["Calculate Cohen-Coon Gains"]
-    X -- Relay Feedback --> Y3["Calculate Relay Feedback Gains"]
-    X -- IMC --> Y4["Calculate IMC Gains"]
-    X -- "Tyreus-Luyben" --> Y5["Calculate Tyreus-Luyben Gains"]
-    Y1 --> Z["Validate Gains"]
-    Y2 --> Z
-    Y3 --> Z
-    Y4 --> Z
-    Y5 --> Z
-    Z --> AA["Apply Gains to PID Controller"]
-    AA --> N
-    N --> AB["Read Input"]
-    AB --> AC{"Apply Input Filter?"}
-    AC -- Yes --> AD["Filter Input"]
-    AC -- No --> AE["Calculate Error"]
-    AD --> AE
-    AE --> AF["Calculate Proportional Term"]
-    AF --> AG["Calculate Integral Term"]
-    AG --> AH{"Apply Anti-Windup?"}
-    AH -- Yes --> AI["Constrain Integral Term"]
-    AH -- No --> AJ["Calculate Derivative Term"]
-    AI --> AJ
-    AJ --> AK["Sum PID Terms"]
-    AK --> AL{"Apply Output Filter?"}
-    AL -- Yes --> AM["Filter Output"]
-    AL -- No --> AN["Limit Output to Min/Max"]
-    AM --> AN
-    AN --> AO["Update Output"]
-    AO --> AP{"Continue Operation?"}
-    AP -- Yes --> AB
-    AP -- No --> AQ(["End"])
+    K -- Yes --> L["Set Oscillation Mode (Normal, Half, Mild)"]
+    K -- No --> M["Set Setpoint"]
+    L --> M
+    M --> N{"Manual or Auto-Tuning?"}
+    N -- Manual --> O["Set Manual Gains"]
+    O --> P["Enter Runtime Loop"]
+    N -- "Auto-Tuning" --> Q["Start Auto-Tuning Process"]
+    Q --> R["Reset Variables"]
+    R --> S["Initialize Timers"]
+    S --> T["Apply Relay Output"]
+    T --> U["Monitor System Response"]
+    U --> V["Detect Peaks"]
+    V --> W["Store Peak Data"]
+    W --> X{"Enough Data Collected?"}
+    X -- No --> T
+    X -- Yes --> Y["Analyze Data"]
+    Y --> Z["Select Tuning Method"]
+    Z -- "Ziegler-Nichols" --> AA1["Calculate Ziegler-Nichols Gains"]
+    Z -- "Cohen-Coon" --> AA2["Calculate Cohen-Coon Gains"]
+    Z -- Relay Feedback --> AA3["Calculate Relay Feedback Gains"]
+    Z -- IMC --> AA4["Calculate IMC Gains"]
+    Z -- "Tyreus-Luyben" --> AA5["Calculate Tyreus-Luyben Gains"]
+    AA1 --> AB["Validate Gains"]
+    AA2 --> AB
+    AA3 --> AB
+    AA4 --> AB
+    AA5 --> AB
+    AB --> AC["Apply Gains to PID Controller"]
+    AC --> P
+    P --> AD["Read Input"]
+    AD --> AE{"Apply Input Filter?"}
+    AE -- Yes --> AF["Filter Input"]
+    AE -- No --> AG["Calculate Error"]
+    AF --> AG
+    AG --> AH["Calculate Proportional Term"]
+    AH --> AI["Calculate Integral Term"]
+    AI --> AJ{"Apply Anti-Windup?"}
+    AJ -- Yes --> AK["Constrain Integral Term"]
+    AJ -- No --> AL["Calculate Derivative Term"]
+    AK --> AL
+    AL --> AM["Sum PID Terms"]
+    AM --> AN{"Apply Output Filter?"}
+    AN -- Yes --> AO["Filter Output"]
+    AN -- No --> AP["Limit Output to Min/Max"]
+    AO --> AP
+    AP --> AQ["Update Output"]
+    AQ --> AR{"Continue Operation?"}
+    AR -- Yes --> AD
+    AR -- No --> AS(["End"])
      A:::start
      B:::init
      C:::init
@@ -72,11 +75,12 @@ flowchart TD
      H:::filter
      I:::decision
      J:::antiwindup
-     K:::init
-     M:::manual
-     N:::runtime
-     O:::autotune
-     P:::autotune
+     K:::decision
+     L:::oscillation
+     M:::init
+     N:::decision
+     O:::manual
+     P:::runtime
      Q:::autotune
      R:::autotune
      S:::autotune
@@ -85,34 +89,36 @@ flowchart TD
      V:::autotune
      W:::autotune
      X:::autotune
-     Y1:::autotune
-     Y1:::tuning
-     Y2:::autotune
-     Y2:::tuning
-     Y3:::autotune
-     Y3:::tuning
-     Y4:::autotune
-     Y4:::tuning
-     Y5:::autotune
-     Y5:::tuning
+     Y:::autotune
      Z:::autotune
-     AA:::autotune
-     AB:::runtime
-     AC:::decision
-     AD:::filter
-     AE:::runtime
-     AF:::runtime
+     AA1:::autotune
+     AA1:::tuning
+     AA2:::autotune
+     AA2:::tuning
+     AA3:::autotune
+     AA3:::tuning
+     AA4:::autotune
+     AA4:::tuning
+     AA5:::autotune
+     AA5:::tuning
+     AB:::autotune
+     AC:::autotune
+     AD:::runtime
+     AE:::decision
+     AF:::filter
      AG:::runtime
-     AH:::decision
-     AI:::antiwindup
-     AJ:::runtime
-     AK:::runtime
-     AL:::decision
-     AM:::filter
-     AN:::runtime
-     AO:::runtime
-     AP:::decision
-     AQ:::finish
+     AH:::runtime
+     AI:::runtime
+     AJ:::decision
+     AK:::antiwindup
+     AL:::runtime
+     AM:::runtime
+     AN:::decision
+     AO:::filter
+     AP:::runtime
+     AQ:::runtime
+     AR:::decision
+     AS:::finish
     classDef start fill:#4CAF50,color:white,stroke:#388E3C,stroke-width:2px
     classDef init fill:#2196F3,color:white,stroke:#1976D2,stroke-width:2px
     classDef decision fill:#FFC107,color:black,stroke:#FFA000,stroke-width:2px
@@ -123,3 +129,4 @@ flowchart TD
     classDef tuning fill:#673AB7,color:white,stroke:#512DA8,stroke-width:2px
     classDef runtime fill:#03A9F4,color:white,stroke:#0288D1,stroke-width:2px
     classDef finish fill:#F44336,color:white,stroke:#D32F2F,stroke-width:2px
+    classDef oscillation fill:#FF9800,color:black,stroke:#F57C00,stroke-width:2px

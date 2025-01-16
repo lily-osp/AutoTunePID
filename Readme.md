@@ -1,37 +1,45 @@
 # AutoTunePID Library
 
-A robust, feature-rich PID control library for Arduino that implements advanced auto-tuning algorithms, signal filtering, and anti-windup capabilities.
+A robust, feature-rich PID control library for Arduino that implements advanced auto-tuning algorithms, signal filtering, anti-windup, and operational modes for flexible control.
 
 ---
 
 ## Features
 
 - **Comprehensive PID Control**
-
   - Real-time PID calculations with configurable update intervals.
   - Constrained output range to ensure system safety.
   - Support for both auto-tuning and manual parameter configuration.
 
 - **Multiple Auto-Tuning Methods**:
-
   - **Ziegler-Nichols**: Determines ultimate gain (Ku) and oscillation period (Tu) using observed output extremes.
   - **Cohen-Coon**: Fine-tunes Ku and Tu with alternative multipliers for better initial performance.
   - **Relay Feedback**: Identifies Ku and Tu via relay oscillations, suited for systems without steady-state errors.
   - **IMC (Internal Model Control)**: Balances system robustness and responsiveness using a lambda tuning parameter.
   - **Tyreus-Luyben**: Provides robust tuning with minimal overshoot, ideal for systems requiring stability.
 
-- **Signal Filtering**
+- **Operational Modes**:
+  - **Normal**: Standard PID operation.
+  - **Reverse**: Reverses the error calculation for cooling systems.
+  - **Hold**: Stops all calculations to save resources.
+  - **Preserve**: Minimal calculations to keep the system responsive.
+  - **Tune**: Performs auto-tuning to determine `Tu` and `Ku`.
+  - **Auto**: Automatically selects the best operational mode based on system behavior.
 
+- **Oscillation Modes**:
+  - **Normal**: Full oscillation (`MaxOutput - MinOutput`).
+  - **Half**: Half oscillation (`1/2 MaxOutput - 1/2 MinOutput`).
+  - **Mild**: Mild oscillation (`1/4 MaxOutput - 1/4 MinOutput`).
+
+- **Signal Filtering**:
   - Configurable input and output signal filters using exponential moving averages.
   - Adjustable alpha values for filter responsiveness (range: 0.01–1.0).
 
-- **Anti-Windup**
-
+- **Anti-Windup**:
   - Prevents integral windup by constraining the integral term when the output is saturated.
   - Configurable threshold for anti-windup behavior.
 
-- **Safety and Reliability**
-
+- **Safety and Reliability**:
   - Output values are constrained within specified bounds.
   - Fixed interval updates ensure stability.
   - Protected filter parameters to prevent invalid configurations.
@@ -59,6 +67,8 @@ void setup() {
   pid.setSetpoint(100.0); // Target setpoint
   pid.enableInputFilter(0.1); // Optional input filtering
   pid.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+  pid.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+  pid.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -105,6 +115,19 @@ void enableOutputFilter(float alpha); // Enable output filtering (alpha range: 0
 void enableAntiWindup(bool enable, float threshold = 0.8f); // Enable/disable anti-windup with optional threshold
 ```
 
+#### Operational Modes
+
+```cpp
+void setOperationalMode(OperationalMode mode); // Set the operational mode
+```
+
+#### Oscillation Modes
+
+```cpp
+void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
+void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
+```
+
 #### Runtime Operations
 
 ```cpp
@@ -130,7 +153,6 @@ float getSetpoint(); // Get the current setpoint
 The library implements five distinct auto-tuning algorithms:
 
 1. **Ziegler-Nichols**:
-
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
      - $ K_p = 0.6 \cdot Ku $
@@ -138,7 +160,6 @@ The library implements five distinct auto-tuning algorithms:
      - $ K_d = 0.075 \cdot K_p \cdot Tu $
 
 2. **Cohen-Coon**:
-
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
      - $ K_p = 0.8 \cdot Ku $
@@ -146,21 +167,18 @@ The library implements five distinct auto-tuning algorithms:
      - $ K_d = 0.194 \cdot K_p \cdot Tu $
 
 3. **Relay Feedback**:
-
    - Uses oscillations induced by a relay to compute parameters:
      - $ K_p = 0.5 \cdot Ku $
      - $ K_i = \frac{1.0 \cdot K_p}{Tu} $
      - $ K_d = 0.125 \cdot K_p \cdot Tu $
 
 4. **IMC (Internal Model Control)**:
-
    - Incorporates a smoothing factor ('λ') to adjust response speed:
      - $ K_p = 0.4 \cdot Ku $
      - $ K_i = \frac{K_p}{2 \cdot \lambda} $
      - $ K_d = 0.5 \cdot K_p \cdot \lambda $
 
 5. **Tyreus-Luyben**:
-
    - Provides robust tuning with minimal overshoot:
      - $ K_p = 0.45 \cdot Ku $
      - $ K_i = \frac{K_p}{2.2 \cdot Tu} $
@@ -189,6 +207,8 @@ void setup() {
   tempController.setSetpoint(75.0); // Target temperature
   tempController.enableInputFilter(0.1); // Enable input filtering
   tempController.enableAntiWindup(true, 0.8); // Enable anti-windup
+  tempController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+  tempController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -209,6 +229,8 @@ void setup() {
   motorController.setSetpoint(1500); // Target RPM
   motorController.enableInputFilter(0.2); // Enable input filtering
   motorController.enableAntiWindup(true, 0.7); // Enable anti-windup
+  motorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+  motorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -229,6 +251,8 @@ void setup() {
   waterController.setSetpoint(50.0); // Target water level
   waterController.enableInputFilter(0.15); // Enable input filtering
   waterController.enableAntiWindup(true, 0.9); // Enable anti-windup
+  waterController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
+  waterController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -249,6 +273,8 @@ void setup() {
   pressureController.setSetpoint(100.0); // Target pressure
   pressureController.enableInputFilter(0.1); // Enable input filtering
   pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup
+  pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+  pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -269,6 +295,8 @@ void setup() {
   reactorController.setSetpoint(80.0); // Target reactor temperature
   reactorController.enableInputFilter(0.1); // Enable input filtering
   reactorController.enableAntiWindup(true, 0.8); // Enable anti-windup
+  reactorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+  reactorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -319,3 +347,5 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) file for 
 For bug reports and feature requests, please use the [GitHub issue tracker](https://github.com/your-repo/issues).
 
 For technical questions, contact: azzar.mr.zs@gmail.com
+
+---

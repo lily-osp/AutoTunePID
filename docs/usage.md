@@ -15,8 +15,10 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 7. [Updating the Controller](#updating-the-controller)
 8. [Retrieving PID Gains and Output](#retrieving-pid-gains-and-output)
 9. [Auto-Tuning Behavior](#auto-tuning-behavior)
-10. [Example Sketches](#example-sketches)
-11. [Summary of Methods](#summary-of-methods)
+10. [Operational Modes](#operational-modes)
+11. [Oscillation Modes](#oscillation-modes)
+12. [Example Sketches](#example-sketches)
+13. [Summary of Methods](#summary-of-methods)
 
 ---
 
@@ -165,6 +167,50 @@ When **auto-tuning** is enabled, the library uses one of the supported methods (
 
 ---
 
+## Operational Modes
+
+The library supports **multiple operational modes** to adapt the PID controller's behavior based on the system's needs. Use `setOperationalMode()` to select one of the following modes:
+
+- **Normal**: Standard PID operation.
+- **Reverse**: Reverses the error calculation for cooling systems.
+- **Hold**: Stops all calculations to save resources.
+- **Preserve**: Minimal calculations to keep the system responsive.
+- **Tune**: Performs auto-tuning to determine `Tu` and `Ku`.
+- **Auto**: Automatically selects the best operational mode based on system behavior.
+
+### Example
+```cpp
+pidController.setOperationalMode(OperationalMode::Tune); // Set mode to Tune for auto-tuning
+```
+
+This sets the operational mode to **Tune**, enabling auto-tuning.
+
+---
+
+## Oscillation Modes
+
+The library supports **three oscillation modes** for auto-tuning, which determine the amplitude of the oscillations during the tuning process:
+
+- **Normal**: Full oscillation (`MaxOutput - MinOutput`).
+- **Half**: Half oscillation (`1/2 MaxOutput - 1/2 MinOutput`).
+- **Mild**: Mild oscillation (`1/4 MaxOutput - 1/4 MinOutput`).
+
+You can also set the **number of oscillation steps** for auto-tuning. The default steps for each mode are:
+
+- **Normal**: 10 steps.
+- **Half**: 20 steps.
+- **Mild**: 40 steps.
+
+### Example
+```cpp
+pidController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+pidController.setOscillationSteps(15); // Set custom oscillation steps (default is 20 for Half mode)
+```
+
+This sets the oscillation mode to **Half** and overrides the default steps to **15**.
+
+---
+
 ## Example Sketches
 
 ### 1. Ziegler-Nichols Example: Temperature Control
@@ -176,6 +222,8 @@ void setup() {
     tempController.setSetpoint(75.0); // Target temperature
     tempController.enableInputFilter(0.1); // Enable input filtering
     tempController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    tempController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+    tempController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -195,6 +243,8 @@ void setup() {
     motorController.setSetpoint(1500); // Target RPM
     motorController.enableInputFilter(0.2); // Enable input filtering
     motorController.enableAntiWindup(true, 0.7); // Enable anti-windup
+    motorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+    motorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -214,6 +264,8 @@ void setup() {
     waterController.setSetpoint(50.0); // Target water level
     waterController.enableInputFilter(0.15); // Enable input filtering
     waterController.enableAntiWindup(true, 0.9); // Enable anti-windup
+    waterController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
+    waterController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -233,6 +285,8 @@ void setup() {
     pressureController.setSetpoint(100.0); // Target pressure
     pressureController.enableInputFilter(0.1); // Enable input filtering
     pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
+    pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -252,6 +306,8 @@ void setup() {
     reactorController.setSetpoint(80.0); // Target reactor temperature
     reactorController.enableInputFilter(0.1); // Enable input filtering
     reactorController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    reactorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
+    reactorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
@@ -278,5 +334,8 @@ void loop() {
 | `getOutput()`                       | Retrieves the computed PID output.           |
 | `getKp()`, `getKi()`, `getKd()`     | Retrieves the PID gains.                     |
 | `getKu()`, `getTu()`                | Retrieves the ultimate gain and oscillation period. |
+| `setOperationalMode(OperationalMode)` | Sets the operational mode.                   |
+| `setOscillationMode(OscillationMode)` | Sets the oscillation mode for auto-tuning.   |
+| `setOscillationSteps(int steps)`    | Sets the number of oscillation steps for auto-tuning. |
 
 ---
