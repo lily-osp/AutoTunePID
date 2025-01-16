@@ -7,11 +7,13 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 ## Features
 
 - **Comprehensive PID Control**
+  
   - Real-time PID calculations with configurable update intervals.
   - Constrained output range to ensure system safety.
   - Support for both auto-tuning and manual parameter configuration.
 
 - **Multiple Auto-Tuning Methods**:
+  
   - **Ziegler-Nichols**: Determines ultimate gain (Ku) and oscillation period (Tu) using observed output extremes.
   - **Cohen-Coon**: Fine-tunes Ku and Tu with alternative multipliers for better initial performance.
   - **Relay Feedback**: Identifies Ku and Tu via relay oscillations, suited for systems without steady-state errors.
@@ -19,6 +21,7 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
   - **Tyreus-Luyben**: Provides robust tuning with minimal overshoot, ideal for systems requiring stability.
 
 - **Operational Modes**:
+  
   - **Normal**: Standard PID operation.
   - **Reverse**: Reverses the error calculation for cooling systems.
   - **Hold**: Stops all calculations to save resources.
@@ -27,19 +30,23 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
   - **Auto**: Automatically selects the best operational mode based on system behavior.
 
 - **Oscillation Modes**:
+  
   - **Normal**: Full oscillation (`MaxOutput - MinOutput`).
   - **Half**: Half oscillation (`1/2 MaxOutput - 1/2 MinOutput`).
   - **Mild**: Mild oscillation (`1/4 MaxOutput - 1/4 MinOutput`).
 
 - **Signal Filtering**:
+  
   - Configurable input and output signal filters using exponential moving averages.
   - Adjustable alpha values for filter responsiveness (range: 0.01–1.0).
 
 - **Anti-Windup**:
+  
   - Prevents integral windup by constraining the integral term when the output is saturated.
   - Configurable threshold for anti-windup behavior.
 
 - **Safety and Reliability**:
+  
   - Output values are constrained within specified bounds.
   - Fixed interval updates ensure stability.
   - Protected filter parameters to prevent invalid configurations.
@@ -153,6 +160,7 @@ float getSetpoint(); // Get the current setpoint
 The library implements five distinct auto-tuning algorithms:
 
 1. **Ziegler-Nichols**:
+   
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
      - $ K_p = 0.6 \cdot Ku $
@@ -160,6 +168,7 @@ The library implements five distinct auto-tuning algorithms:
      - $ K_d = 0.075 \cdot K_p \cdot Tu $
 
 2. **Cohen-Coon**:
+   
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
      - $ K_p = 0.8 \cdot Ku $
@@ -167,18 +176,21 @@ The library implements five distinct auto-tuning algorithms:
      - $ K_d = 0.194 \cdot K_p \cdot Tu $
 
 3. **Relay Feedback**:
+   
    - Uses oscillations induced by a relay to compute parameters:
      - $ K_p = 0.5 \cdot Ku $
      - $ K_i = \frac{1.0 \cdot K_p}{Tu} $
      - $ K_d = 0.125 \cdot K_p \cdot Tu $
 
 4. **IMC (Internal Model Control)**:
+   
    - Incorporates a smoothing factor ('λ') to adjust response speed:
      - $ K_p = 0.4 \cdot Ku $
      - $ K_i = \frac{K_p}{2 \cdot \lambda} $
      - $ K_d = 0.5 \cdot K_p \cdot \lambda $
 
 5. **Tyreus-Luyben**:
+   
    - Provides robust tuning with minimal overshoot:
      - $ K_p = 0.45 \cdot Ku $
      - $ K_i = \frac{K_p}{2.2 \cdot Tu} $
@@ -344,7 +356,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) file for 
 
 ## Support
 
-For bug reports and feature requests, please use the [GitHub issue tracker](https://github.com/your-repo/issues).
+For bug reports and feature requests, please use the [GitHub issue tracker](https://github.com/lily-osp/AutoTunePID/issues).
 
 For technical questions, contact: azzar.mr.zs@gmail.com
 

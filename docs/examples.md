@@ -22,11 +22,13 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 This example demonstrates how to use the **Ziegler-Nichols** tuning method for a temperature control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Temperature Sensor)
 - **Output Pin**: 3 (Heater Control)
 - **Setpoint**: 75.0°C
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -59,11 +61,13 @@ void loop() {
 This example demonstrates how to use the **Cohen-Coon** tuning method for a motor speed control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Encoder or Tachometer)
 - **Output Pin**: 5 (Motor PWM Control)
 - **Setpoint**: 1500 RPM
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -96,11 +100,13 @@ void loop() {
 This example demonstrates how to use the **Relay Feedback** tuning method for a water level control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Water Level Sensor)
 - **Output Pin**: 6 (Valve Control)
 - **Setpoint**: 50.0 cm
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -133,11 +139,13 @@ void loop() {
 This example demonstrates how to use the **IMC** tuning method for a pressure control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Pressure Sensor)
 - **Output Pin**: 9 (Pump Control)
 - **Setpoint**: 100.0 kPa
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -170,11 +178,13 @@ void loop() {
 This example demonstrates how to use the **Tyreus-Luyben** tuning method for a chemical reactor temperature control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Temperature Sensor)
 - **Output Pin**: 10 (Heater Control)
 - **Setpoint**: 80.0°C
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -207,11 +217,13 @@ void loop() {
 This example demonstrates how to use **manual tuning** for a generic control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
 
 #### Pin Configuration
+
 - **Input Pin**: A0 (Sensor Input)
 - **Output Pin**: 11 (Actuator Control)
 - **Setpoint**: 50.0 (Arbitrary Units)
 
 #### Code
+
 ```cpp
 #include "AutoTunePID.h"
 
@@ -240,13 +252,13 @@ void loop() {
 
 ## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
-| Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint       | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
-|---------------------|------------------------------|-----------|------------|----------------|------------------|-------------------|------------------------|------------------|------------------|
-| **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C         | 0.1              | 0.1               | 80%                    | Normal           | Tune             |
-| **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM       | 0.2              | 0.2               | 70%                    | Half             | Tune             |
-| **Relay Feedback**  | Water Level Control          | A0        | 6          | 50.0 cm        | 0.15             | 0.15              | 90%                    | Mild             | Tune             |
-| **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa      | 0.1              | 0.1               | 80%                    | Normal           | Tune             |
-| **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C         | 0.1              | 0.1               | 80%                    | Half             | Tune             |
-| **Manual Tuning**   | Generic Control System       | A0        | 11         | 50.0 (Arbitrary)| 0.1              | 0.1               | 80%                    | Normal           | Normal           |
+| Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint         | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
+| ------------------- | ---------------------------- | --------- | ---------- | ---------------- | ---------------- | ----------------- | --------------------- | ---------------- | ---------------- |
+| **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C           | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
+| **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM         | 0.2              | 0.2               | 70%                   | Half             | Tune             |
+| **Relay Feedback**  | Water Level Control          | A0        | 6          | 50.0 cm          | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
+| **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa        | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
+| **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C           | 0.1              | 0.1               | 80%                   | Half             | Tune             |
+| **Manual Tuning**   | Generic Control System       | A0        | 11         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
 
 ---
