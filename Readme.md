@@ -335,6 +335,9 @@ void loop() {
 - For more details about the algorithms used in the library, read [here](docs/explanation.md).
 - For more details about the library usage, read [here](docs/usage.md).
 - For more details about manual tuning, read [here](docs/manual.md).
+- And For those who seek the Flowchart and the state diagram of the library u can see here:
+  - [Flowchart](docs/flowchart.mermaid)
+  - [State diagram](docs/state-diagram.mermaid)
 
 ---
 
