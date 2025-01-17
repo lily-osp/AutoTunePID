@@ -8,6 +8,7 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _oscillationMode(OscillationMode::Normal)
     , _oscillationSteps(10)
     , _setpoint(0)
+    , _lambda(0.5f) // Default lambda value
     , _kp(0)
     , _ki(0)
     , _kd(0)
@@ -18,6 +19,10 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _lastUpdate(0)
     , _ultimateGain(0)
     , _oscillationPeriod(0)
+    , _processTimeConstant(0) // Initialize process time constant (T)
+    , _deadTime(0) // Initialize dead time (L)
+    , _integralTime(0) // Initialize integral time (Ti)
+    , _derivativeTime(0) // Initialize derivative time (Td)
     , _inputFilterEnabled(false)
     , _outputFilterEnabled(false)
     , _inputFilteredValue(0)
@@ -96,6 +101,11 @@ void AutoTunePID::setOscillationSteps(int steps)
     if (steps > 0) {
         _oscillationSteps = steps;
     }
+}
+
+void AutoTunePID::setLambda(float lambda)
+{
+    _lambda = lambda;
 }
 
 void AutoTunePID::update(float currentInput)
@@ -177,6 +187,14 @@ void AutoTunePID::performAutoTune(float currentInput)
             _oscillationPeriod = (currentTime - oscillationStartTime) / (float)(_oscillationSteps * 1000); // Period in seconds
             _ultimateGain = (4.0f * (highOutput - lowOutput)) / (PI * (highOutput - lowOutput)); // Simplified amplitude
 
+            // Estimate T and L from the system response
+            _processTimeConstant = _oscillationPeriod / 2.0f; // Approximate T as half the oscillation period
+            _deadTime = _oscillationPeriod / 4.0f; // Approximate L as a quarter of the oscillation period
+
+            // Calculate Ti and Td based on T and L
+            _integralTime = 2.0f * _deadTime;
+            _derivativeTime = _deadTime / 2.0f;
+
             // Calculate PID gains based on the selected tuning method
             switch (_method) {
             case TuningMethod::ZieglerNichols:
@@ -194,6 +212,9 @@ void AutoTunePID::performAutoTune(float currentInput)
             case TuningMethod::TyreusLuyben:
                 calculateTyreusLuybenGains();
                 break;
+            case TuningMethod::LambdaTuning:
+                calculateLambdaTuningGains();
+                break;
             default:
                 break;
             }
@@ -208,37 +229,50 @@ void AutoTunePID::performAutoTune(float currentInput)
 void AutoTunePID::calculateZieglerNicholsGains()
 {
     _kp = 0.6f * _ultimateGain;
-    _ki = 1.2f * _kp / _oscillationPeriod;
-    _kd = 0.075f * _kp * _oscillationPeriod;
+    _ki = _kp / _integralTime;
+    _kd = _kp * _derivativeTime;
 }
 
 void AutoTunePID::calculateCohenCoonGains()
 {
-    _kp = 0.8f * _ultimateGain;
-    _ki = _kp / (0.8f * _oscillationPeriod);
-    _kd = 0.194f * _kp * _oscillationPeriod;
+    _kp = (1.35f / _ultimateGain) * (_processTimeConstant / _deadTime + 0.185f);
+    _ki = _kp / (_processTimeConstant + 0.611f * _deadTime);
+    _kd = _kp * 0.185f * _deadTime;
 }
 
 void AutoTunePID::calculateRelayFeedbackGains()
 {
     _kp = 0.5f * _ultimateGain;
-    _ki = 1.0f * _kp / _oscillationPeriod;
-    _kd = 0.125f * _kp * _oscillationPeriod;
+    _ki = _kp / _integralTime;
+    _kd = _kp * _derivativeTime;
 }
 
 void AutoTunePID::calculateIMCGains()
 {
     const float lambda = 0.5f * _oscillationPeriod;
-    _kp = 0.4f * _ultimateGain;
-    _ki = _kp / (2.0f * lambda);
-    _kd = 0.5f * _kp * lambda;
+    _kp = _processTimeConstant / (lambda + _deadTime);
+    _ki = _kp / _integralTime;
+    _kd = _kp * _derivativeTime;
 }
 
 void AutoTunePID::calculateTyreusLuybenGains()
 {
     _kp = 0.45f * _ultimateGain;
-    _ki = _kp / (2.2f * _oscillationPeriod);
+    _ki = _kp / _integralTime;
     _kd = 0.0f;
+}
+
+void AutoTunePID::calculateLambdaTuningGains()
+{
+    // Ensure lambda is set and valid
+    if (_lambda <= 0) {
+        _lambda = 0.5f * _processTimeConstant; // Default value for lambda
+    }
+
+    // Calculate Kp, Ki, and Kd using the Lambda Tuning (CLD) formula
+    _kp = _processTimeConstant / (_ultimateGain * (_lambda + _deadTime));
+    _ki = _kp / _processTimeConstant;
+    _kd = _kp * 0.5f * _deadTime;
 }
 
 void AutoTunePID::computePID()

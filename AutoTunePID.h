@@ -10,6 +10,7 @@ enum class TuningMethod {
     RelayFeedback, // Relay feedback tuning method
     IMC, // Internal Model Control tuning method
     TyreusLuyben, // Tyreus-Luyben tuning method
+    LambdaTuning, // Lambda Tuning (CLD) method
     Manual // Manual tuning method
 };
 
@@ -19,6 +20,7 @@ constexpr auto CohenCoon = TuningMethod::CohenCoon;
 constexpr auto RelayFeedback = TuningMethod::RelayFeedback;
 constexpr auto IMC = TuningMethod::IMC;
 constexpr auto TyreusLuyben = TuningMethod::TyreusLuyben;
+constexpr auto LambdaTuning = TuningMethod::LambdaTuning; // Add Lambda Tuning (CLD)
 constexpr auto Manual = TuningMethod::Manual;
 
 // Enumeration for operational modes
@@ -53,6 +55,7 @@ public:
     void setOperationalMode(OperationalMode mode); // Set the operational mode
     void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
     void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
+    void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
 
     // Runtime methods
     void update(float currentInput); // Update the PID controller with the current input
@@ -64,6 +67,7 @@ public:
     float getTu() const { return _oscillationPeriod; } // Get the oscillation period (Tu)
     float getSetpoint() const { return _setpoint; } // Get the current setpoint
     OperationalMode getOperationalMode() const { return _operationalMode; } // Get the current operational mode
+    float getLambda() const { return _lambda; } // Get the lambda parameter for Lambda Tuning (CLD)
 
 private:
     // PID computation
@@ -78,6 +82,7 @@ private:
     void calculateRelayFeedbackGains(); // Calculate PID gains using Relay Feedback method
     void calculateIMCGains(); // Calculate PID gains using IMC method
     void calculateTyreusLuybenGains(); // Calculate PID gains using Tyreus-Luyben method
+    void calculateLambdaTuningGains(); // Calculate PID gains using Lambda Tuning (CLD) method
 
     // Configuration
     const float _minOutput; // Minimum output value
@@ -87,6 +92,7 @@ private:
     OscillationMode _oscillationMode; // Current oscillation mode for auto-tuning
     int _oscillationSteps; // Number of oscillation steps for auto-tuning
     float _setpoint; // Desired setpoint
+    float _lambda; // Lambda parameter for Lambda Tuning (CLD)
 
     // PID parameters
     float _kp, _ki, _kd; // Proportional, integral, and derivative gains
@@ -103,6 +109,12 @@ private:
     unsigned long _lastUpdate; // Timestamp of the last update
     float _ultimateGain; // Ultimate gain (Ku)
     float _oscillationPeriod; // Oscillation period (Tu)
+
+    // Additional parameters for advanced tuning
+    float _processTimeConstant; // Process time constant (T)
+    float _deadTime; // Dead time (L)
+    float _integralTime; // Integral time (Ti)
+    float _derivativeTime; // Derivative time (Td)
 
     // Filtering
     bool _inputFilterEnabled; // Flag to enable/disable input filtering
