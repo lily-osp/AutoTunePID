@@ -75,14 +75,14 @@ stateDiagram
           direction TB
           [*] --> ZieglerNichols
           [*] --> CohenCoon
-          [*] --> RelayFeedback
           [*] --> IMC
           [*] --> TyreusLuyben
+          [*] --> LambdaTuning
 [*]          ZieglerNichols
           CohenCoon
-          RelayFeedback
           IMC
           TyreusLuyben
+          LambdaTuning
         }
       }
     }
@@ -201,12 +201,6 @@ stateDiagram
                         Ki = Kp/(0.8Tu)
                         Kd = 0.194KpTu
   end note
-  note right of RelayFeedback
-  Relay Feedback:
-                        Kp = 0.5Ku
-                        Ki = 1.0Kp/Tu
-                        Kd = 0.125KpTu
-  end note
   note right of IMC
   IMC Method:
                         λ = 0.5Tu
@@ -219,6 +213,12 @@ stateDiagram
                         Kp = 0.45Ku
                         Ki = Kp/(2.2Tu)
                         Kd = 0.0
+  end note
+  note right of LambdaTuning
+  Lambda Tuning (CLD):
+                        Kp = T / (K(λ + L))
+                        Ki = Kp / T
+                        Kd = Kp * 0.5L
   end note
   note right of ProportionalTerm : P = Kp * error
   note right of IntegralTerm : I = Ki * ∫error dt

@@ -1,3 +1,4 @@
+
 ## **1. Lambda Tuning (CLD)**
 
 ### Formula:
@@ -66,26 +67,29 @@ $ K_d = K_p \cdot 0.37L $
 
 ### **Automation Workflow**
 
-1. **Perform Relay Feedback Test**:
-   
-   - Induce oscillations in the system and record:
-     - $ K_u $: Relay-induced oscillation gain.
+1. **Induce Oscillations**:
+
+   - Use a proportional controller or relay to induce oscillations in the system.
+   - Record:
+     - $ K_u $: Ultimate gain (oscillation gain).
      - $ T_u $: Oscillation period.
 
 2. **Estimate Process Parameters (if needed)**:
-   
+
    - $ K, T, L $: Derived using $ K_u, T_u $.
 
 3. **Calculate PID Gains**:
-   
+
    - Use the appropriate method (Lambda, IMC, Tyreus-Luyben, Ziegler-Nichols, or Cohen-Coon).
 
 4. **Implement the Controller**:
-   
+
    - Apply the tuned $ K_p $, $ T_i $, and $ T_d $ values in your PID controller.
 
 ---
 
 ### **Conclusion**
 
-Relay feedback provides the foundation for all these tuning methods, either directly ($ K_u, T_u $) or indirectly (via estimated $ K, T, L $). Once the relay test is automated, you can implement all these tuning methods programmatically in your system.    
+The **Lambda Tuning (CLD)** method provides a robust approach for systems with significant dead time, while **IMC**, **Tyreus-Luyben**, **Ziegler-Nichols**, and **Cohen-Coon** offer additional options for different system dynamics. These formulas can be implemented programmatically in your **AutoTunePID library** to achieve optimal PID tuning.
+
+---

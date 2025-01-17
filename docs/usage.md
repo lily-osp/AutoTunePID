@@ -1,6 +1,6 @@
 # Using the AutoTunePID Library
 
-The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC**, and **Tyreus-Luyben**, as well as manual tuning options. This guide provides a detailed explanation of how to integrate and use the library effectively.
+The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **IMC**, **Tyreus-Luyben**, and **Lambda Tuning (CLD)**, as well as manual tuning options. This guide provides a detailed explanation of how to integrate and use the library effectively.
 
 ---
 
@@ -57,17 +57,17 @@ The **tuning method** determines how the PID gains are calculated. Use `setTunin
 
 - `TuningMethod::ZieglerNichols`: A popular method for process control.
 - `TuningMethod::CohenCoon`: Useful for processes with significant time delays.
-- `TuningMethod::RelayFeedback`: Automatically induces oscillations for tuning.
 - `TuningMethod::IMC`: Balances robustness and response speed.
 - `TuningMethod::TyreusLuyben`: Minimizes overshoot and improves stability.
+- `TuningMethod::LambdaTuning`: Uses the Lambda Tuning (CLD) method for systems with dead time.
 - `TuningMethod::Manual`: For direct user-defined gains.
 
 ### Example
 ```cpp
-pidController.setTuningMethod(TuningMethod::CohenCoon);
+pidController.setTuningMethod(TuningMethod::LambdaTuning);
 ```
 
-This sets the tuning method to **Cohen-Coon** for better performance in systems with measurable dead time.
+This sets the tuning method to **Lambda Tuning (CLD)** for systems with significant dead time.
 
 ---
 
@@ -159,7 +159,7 @@ This prints the current PID parameters to the Serial Monitor.
 
 ## Auto-Tuning Behavior
 
-When **auto-tuning** is enabled, the library uses one of the supported methods (e.g., Ziegler-Nichols, Cohen-Coon, Relay Feedback, IMC, or Tyreus-Luyben) to compute optimal gains. These gains are applied automatically after tuning completes.
+When **auto-tuning** is enabled, the library uses one of the supported methods (e.g., Ziegler-Nichols, Cohen-Coon, IMC, Tyreus-Luyben, or Lambda Tuning) to compute optimal gains. These gains are applied automatically after tuning completes.
 
 ### Notes
 - Ensure the system can oscillate safely during the tuning process.
@@ -255,28 +255,7 @@ void loop() {
 }
 ```
 
-### 3. Relay Feedback Example: Water Level Control
-```cpp
-#include "AutoTunePID.h"
-AutoTunePID waterController(0, 255, TuningMethod::RelayFeedback);
-
-void setup() {
-    waterController.setSetpoint(50.0); // Target water level
-    waterController.enableInputFilter(0.15); // Enable input filtering
-    waterController.enableAntiWindup(true, 0.9); // Enable anti-windup
-    waterController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
-    waterController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
-}
-
-void loop() {
-    float level = readWaterLevel(); // Read water level sensor
-    waterController.update(level); // Update PID controller
-    analogWrite(VALVE_PIN, waterController.getOutput()); // Control valve
-    delay(100);
-}
-```
-
-### 4. IMC Example: Pressure Control
+### 3. IMC Example: Pressure Control
 ```cpp
 #include "AutoTunePID.h"
 AutoTunePID pressureController(0, 255, TuningMethod::IMC);
@@ -297,7 +276,7 @@ void loop() {
 }
 ```
 
-### 5. Tyreus-Luyben Example: Chemical Reactor Temperature Control
+### 4. Tyreus-Luyben Example: Chemical Reactor Temperature Control
 ```cpp
 #include "AutoTunePID.h"
 AutoTunePID reactorController(0, 255, TuningMethod::TyreusLuyben);
@@ -314,6 +293,27 @@ void loop() {
     float temp = readReactorTemperature(); // Read reactor temperature
     reactorController.update(temp); // Update PID controller
     analogWrite(HEATER_PIN, reactorController.getOutput()); // Control heater
+    delay(100);
+}
+```
+
+### 5. Lambda Tuning Example: Flow Control
+```cpp
+#include "AutoTunePID.h"
+AutoTunePID flowController(0, 255, TuningMethod::LambdaTuning);
+
+void setup() {
+    flowController.setSetpoint(50.0); // Target flow rate
+    flowController.enableInputFilter(0.15); // Enable input filtering
+    flowController.enableAntiWindup(true, 0.9); // Enable anti-windup
+    flowController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
+    flowController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
+}
+
+void loop() {
+    float flowRate = readFlowSensor(); // Read flow sensor
+    flowController.update(flowRate); // Update PID controller
+    analogWrite(VALVE_PIN, flowController.getOutput()); // Control valve
     delay(100);
 }
 ```

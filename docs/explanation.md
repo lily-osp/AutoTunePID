@@ -1,6 +1,6 @@
 # PID Tuning Algorithms: A Comprehensive Guide
 
-This guide provides an in-depth explanation of various PID tuning algorithms available in the AutoTunePID library: **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC-Based Tuning**, **Tyreus-Luyben**, and **Manual Tuning**. Each method is analyzed through general explanation, requirements, steps, strengths, weaknesses, and best use-cases.
+This guide provides an in-depth explanation of various PID tuning algorithms available in the AutoTunePID library: **Ziegler-Nichols**, **Cohen-Coon**, **IMC-Based Tuning**, **Tyreus-Luyben**, **Lambda Tuning (CLD)**, and **Manual Tuning**. Each method is analyzed through general explanation, requirements, steps, strengths, weaknesses, and best use-cases.
 
 ---
 
@@ -90,52 +90,7 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
 
 ---
 
-## 3. Relay Feedback Method
-
-### General Explanation
-
-The Relay Feedback Method, also known as the Åström-Hägglund method, introduces an artificial relay to induce sustained oscillations in the system. This method eliminates the need for manual trial-and-error tuning and calculates PID gains based on the observed oscillation characteristics.
-
-### Requirements
-
-- A system that can tolerate temporary relay-induced oscillations.
-- Ability to measure oscillation amplitude (‘P_o’) and period (‘Tu’).
-- Access to a relay mechanism for control output toggling.
-
-### Steps
-
-1. **Insert Relay:**
-   - Replace the proportional controller with a relay.
-   - Set the relay amplitude to $\pm A$.
-2. **Observe Oscillations:**
-   - Allow the system to oscillate due to the relay.
-   - Measure the output amplitude (‘P_o’) and period (‘Tu’).
-3. **Calculate PID Gains:**
-   - Compute ultimate gain (‘Ku’) as:
-     - $ Ku = 4A / (\pi \cdot P_o) $
-   - Use the values to derive PID parameters:
-     - $ Kp = 0.5 \cdot Ku $
-     - $ Ki = 1.0 \cdot Kp / Tu $
-     - $ Kd = 0.125 \cdot Kp \cdot Tu $
-
-### Strengths
-
-- Automated process, requiring minimal user input.
-- Safer than direct Ziegler-Nichols tuning as it avoids critical oscillations.
-
-### Weaknesses
-
-- May not work well in noisy systems or systems with high delays.
-- Can be slower than other tuning methods due to the need to induce oscillations.
-
-### Best Use-Case
-
-- Systems with unknown dynamics where manual tuning is impractical.
-- Real-world experiments where safety is a concern.
-
----
-
-## 4. IMC-Based Tuning (Internal Model Control)
+## 3. IMC-Based Tuning (Internal Model Control)
 
 ### General Explanation
 
@@ -177,7 +132,7 @@ IMC-Based Tuning uses a process model to compute PID parameters, emphasizing rob
 
 ---
 
-## 5. Tyreus-Luyben Tuning Method
+## 4. Tyreus-Luyben Tuning Method
 
 ### General Explanation
 
@@ -215,6 +170,47 @@ The Tyreus-Luyben method is a robust tuning approach designed to minimize oversh
 
 - Systems requiring minimal overshoot and high stability.
 - Applications where aggressive tuning (e.g., Ziegler-Nichols) leads to instability.
+
+---
+
+## 5. Lambda Tuning (CLD)
+
+### General Explanation
+
+The **Lambda Tuning (CLD)** method is designed for systems with significant dead time. It uses the process time constant (\( T \)), dead time (\( L \)), and a tuning parameter (\( \lambda \)) to calculate PID gains. This method provides a balance between response speed and robustness.
+
+### Requirements
+
+- A system with measurable dead time (\( L \)) and process time constant (\( T \)).
+- Knowledge of the desired closed-loop time constant (\( \lambda \)).
+
+### Steps
+
+1. **Estimate System Parameters:**
+   - Measure the process time constant (\( T \)) and dead time (\( L \)).
+2. **Select \( \lambda \):**
+   - Choose \( \lambda \) based on the desired trade-off between response speed and robustness.
+3. **Calculate PID Gains:**
+   - Use the following formulas:
+     - $ Kp = \frac{T}{K(\lambda + L)} $
+     - $ Ki = \frac{Kp}{T} = \frac{1}{K(\lambda + L)} $
+     - $ Kd = Kp \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)} $
+
+### Strengths
+
+- Handles systems with significant dead time effectively.
+- Provides a balance between response speed and robustness.
+- Adjustable for different performance needs.
+
+### Weaknesses
+
+- Requires accurate measurement of \( T \) and \( L \).
+- More complex than simpler methods like Ziegler-Nichols.
+
+### Best Use-Case
+
+- Systems with significant dead time.
+- Scenarios requiring a balance between response speed and stability.
 
 ---
 
@@ -268,9 +264,9 @@ Manual tuning offers complete control over the PID parameters (‘Kp’, ‘Ki�
 | -------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------- |
 | **Ziegler-Nichols**  | Moderate      | Fast         | Stable system, ability to induce critical oscillations.                                         | Uses critical oscillation to set PID parameters.     | Easy to implement, quick results, good starting point.                | Can lead to aggressive tuning, overshoot, unsuitable for delays.   | Oscillatory systems with consistent dynamics.      |
 | **Cohen-Coon**       | Moderate      | Moderate     | Accurate dead time, process gain, and time constant measurements.                               | Focuses on dead time and first-order system models.  | Handles dead time well, provides smoother responses.                  | Requires accurate measurements, limited to first-order systems.    | Dead-time-dominant systems.                        |
-| **Relay Feedback**   | Moderate-High | Slow         | Oscillation tolerance, ability to measure output amplitude and period.                          | Automatically induces oscillations via a relay.      | Minimal user intervention, avoids manual oscillation trials.          | Time-consuming, less effective in noisy or delayed systems.        | Systems with unknown dynamics.                     |
 | **IMC-Based Tuning** | High          | Moderate     | Precise process model, gain, time constant, dead time, and desired time constant.               | Uses process models to balance speed and stability.  | Robust, handles dead time, adjustable performance tuning.             | Requires precise modeling, complex setup.                          | Dead-time-dominant systems with stability needs.   |
 | **Tyreus-Luyben**    | Moderate      | Moderate     | Stable system, ability to measure ultimate gain and period.                                     | Minimizes overshoot and improves stability.          | Robust, minimal overshoot, suitable for stability-focused systems.    | No derivative action, requires accurate Ku and Tu measurements.    | Systems requiring minimal overshoot and stability. |
+| **Lambda Tuning**    | Moderate-High | Moderate     | Measurable dead time (\( L \)) and process time constant (\( T \)).                             | Balances response speed and robustness.              | Handles dead time effectively, adjustable for performance needs.      | Requires accurate \( T \) and \( L \) measurements.                | Systems with significant dead time.                |
 | **Manual Tuning**    | Low-High      | Variable     | Expertise in PID control, time for iterative adjustments, system tolerance for gradual changes. | Adjusts parameters manually through trial and error. | Fully customizable, works for unique dynamics, no assumptions needed. | Time-intensive, prone to errors, results depend on user expertise. | Unique or challenging system dynamics.             |
 
 ---

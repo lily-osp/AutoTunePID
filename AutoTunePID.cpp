@@ -126,11 +126,11 @@ void AutoTunePID::update(float currentInput)
     } else {
         _error = _setpoint - _input;
 
-        // Reset integral term if error is zero
+        // Reset integral term if error is zero (faster and smoother zeroing)
         if (abs(_error) < 0.001) {
             _integral = 0;
         } else {
-            _integral += _error;
+            _integral += _error * 0.1f; // Smoother integral accumulation
         }
 
         _derivative = _error - _previousError;
@@ -203,9 +203,6 @@ void AutoTunePID::performAutoTune(float currentInput)
             case TuningMethod::CohenCoon:
                 calculateCohenCoonGains();
                 break;
-            case TuningMethod::RelayFeedback:
-                calculateRelayFeedbackGains();
-                break;
             case TuningMethod::IMC:
                 calculateIMCGains();
                 break;
@@ -238,13 +235,6 @@ void AutoTunePID::calculateCohenCoonGains()
     _kp = (1.35f / _ultimateGain) * (_processTimeConstant / _deadTime + 0.185f);
     _ki = _kp / (_processTimeConstant + 0.611f * _deadTime);
     _kd = _kp * 0.185f * _deadTime;
-}
-
-void AutoTunePID::calculateRelayFeedbackGains()
-{
-    _kp = 0.5f * _ultimateGain;
-    _ki = _kp / _integralTime;
-    _kd = _kp * _derivativeTime;
 }
 
 void AutoTunePID::calculateIMCGains()

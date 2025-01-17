@@ -1,6 +1,6 @@
 # Using the AutoTunePID Library
 
-The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **Relay Feedback**, **IMC**, and **Tyreus-Luyben**, as well as manual tuning options. This guide provides detailed examples for each tuning method, including proper pinouts, setpoints, **filtering**, **anti-windup**, **operational modes**, and **oscillation modes**.
+The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **IMC**, **Tyreus-Luyben**, and **Lambda Tuning (CLD)**, as well as manual tuning options. This guide provides detailed examples for each tuning method, including proper pinouts, setpoints, **filtering**, **anti-windup**, **operational modes**, and **oscillation modes**.
 
 ---
 
@@ -8,9 +8,9 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 
 1. [Ziegler-Nichols Example with Filtering, Anti-Windup, and Oscillation Modes](#ziegler-nichols-example-with-filtering-anti-windup-and-oscillation-modes)
 2. [Cohen-Coon Example with Filtering, Anti-Windup, and Oscillation Modes](#cohen-coon-example-with-filtering-anti-windup-and-oscillation-modes)
-3. [Relay Feedback Example with Filtering, Anti-Windup, and Oscillation Modes](#relay-feedback-example-with-filtering-anti-windup-and-oscillation-modes)
-4. [IMC Example with Filtering, Anti-Windup, and Oscillation Modes](#imc-example-with-filtering-anti-windup-and-oscillation-modes)
-5. [Tyreus-Luyben Example with Filtering, Anti-Windup, and Oscillation Modes](#tyreus-luyben-example-with-filtering-anti-windup-and-oscillation-modes)
+3. [IMC Example with Filtering, Anti-Windup, and Oscillation Modes](#imc-example-with-filtering-anti-windup-and-oscillation-modes)
+4. [Tyreus-Luyben Example with Filtering, Anti-Windup, and Oscillation Modes](#tyreus-luyben-example-with-filtering-anti-windup-and-oscillation-modes)
+5. [Lambda Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#lambda-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
 6. [Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#manual-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
 
 ---
@@ -87,45 +87,6 @@ void loop() {
     float rpm = analogRead(A0) * (3000.0 / 1023.0); // Read RPM (0-3000 RPM range)
     motorController.update(rpm); // Update PID controller
     analogWrite(5, motorController.getOutput()); // Control motor speed
-    delay(100); // Update every 100ms
-}
-```
-
----
-
-## Relay Feedback Example with Filtering, Anti-Windup, and Oscillation Modes
-
-### Water Level Control System
-
-This example demonstrates how to use the **Relay Feedback** tuning method for a water level control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
-
-#### Pin Configuration
-
-- **Input Pin**: A0 (Water Level Sensor)
-- **Output Pin**: 6 (Valve Control)
-- **Setpoint**: 50.0 cm
-
-#### Code
-
-```cpp
-#include "AutoTunePID.h"
-
-// Initialize PID controller with output range and Relay Feedback method
-AutoTunePID waterController(0, 255, TuningMethod::RelayFeedback);
-
-void setup() {
-    waterController.setSetpoint(50.0); // Set target water level to 50 cm
-    waterController.enableInputFilter(0.15);  // Enable input filtering with alpha = 0.15
-    waterController.enableOutputFilter(0.15); // Enable output filtering with alpha = 0.15
-    waterController.enableAntiWindup(true, 0.9); // Enable anti-windup with 90% threshold
-    waterController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
-    waterController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
-}
-
-void loop() {
-    float level = analogRead(A0) * (100.0 / 1023.0); // Read water level (0-100 cm range)
-    waterController.update(level); // Update PID controller
-    analogWrite(6, waterController.getOutput()); // Control valve
     delay(100); // Update every 100ms
 }
 ```
@@ -210,6 +171,45 @@ void loop() {
 
 ---
 
+## Lambda Tuning Example with Filtering, Anti-Windup, and Oscillation Modes
+
+### Flow Control System
+
+This example demonstrates how to use the **Lambda Tuning (CLD)** method for a flow control system with **input and output filtering**, **anti-windup**, and **oscillation modes**.
+
+#### Pin Configuration
+
+- **Input Pin**: A0 (Flow Sensor)
+- **Output Pin**: 11 (Valve Control)
+- **Setpoint**: 50.0 L/min
+
+#### Code
+
+```cpp
+#include "AutoTunePID.h"
+
+// Initialize PID controller with output range and Lambda Tuning method
+AutoTunePID flowController(0, 255, TuningMethod::LambdaTuning);
+
+void setup() {
+    flowController.setSetpoint(50.0); // Set target flow rate to 50 L/min
+    flowController.enableInputFilter(0.15);  // Enable input filtering with alpha = 0.15
+    flowController.enableOutputFilter(0.15); // Enable output filtering with alpha = 0.15
+    flowController.enableAntiWindup(true, 0.9); // Enable anti-windup with 90% threshold
+    flowController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
+    flowController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
+}
+
+void loop() {
+    float flowRate = analogRead(A0) * (100.0 / 1023.0); // Read flow rate (0-100 L/min range)
+    flowController.update(flowRate); // Update PID controller
+    analogWrite(11, flowController.getOutput()); // Control valve
+    delay(100); // Update every 100ms
+}
+```
+
+---
+
 ## Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes
 
 ### Generic Control System
@@ -219,7 +219,7 @@ This example demonstrates how to use **manual tuning** for a generic control sys
 #### Pin Configuration
 
 - **Input Pin**: A0 (Sensor Input)
-- **Output Pin**: 11 (Actuator Control)
+- **Output Pin**: 12 (Actuator Control)
 - **Setpoint**: 50.0 (Arbitrary Units)
 
 #### Code
@@ -243,7 +243,7 @@ void setup() {
 void loop() {
     float input = analogRead(A0) * (100.0 / 1023.0); // Read sensor input (0-100 range)
     manualController.update(input); // Update PID controller
-    analogWrite(11, manualController.getOutput()); // Control actuator
+    analogWrite(12, manualController.getOutput()); // Control actuator
     delay(100); // Update every 100ms
 }
 ```
@@ -256,9 +256,9 @@ void loop() {
 | ------------------- | ---------------------------- | --------- | ---------- | ---------------- | ---------------- | ----------------- | --------------------- | ---------------- | ---------------- |
 | **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C           | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
 | **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM         | 0.2              | 0.2               | 70%                   | Half             | Tune             |
-| **Relay Feedback**  | Water Level Control          | A0        | 6          | 50.0 cm          | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
 | **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa        | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
 | **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C           | 0.1              | 0.1               | 80%                   | Half             | Tune             |
-| **Manual Tuning**   | Generic Control System       | A0        | 11         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
+| **Lambda Tuning**   | Flow Control                 | A0        | 11         | 50.0 L/min       | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
+| **Manual Tuning**   | Generic Control System       | A0        | 12         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
 
 ---

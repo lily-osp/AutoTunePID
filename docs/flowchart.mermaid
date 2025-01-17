@@ -35,8 +35,8 @@ flowchart TD
     Y --> Z["Select Tuning Method"]
     Z -- "Ziegler-Nichols" --> AA1["Calculate Ziegler-Nichols Gains"]
     Z -- "Cohen-Coon" --> AA2["Calculate Cohen-Coon Gains"]
-    Z -- Relay Feedback --> AA3["Calculate Relay Feedback Gains"]
-    Z -- IMC --> AA4["Calculate IMC Gains"]
+    Z -- "Lambda-Tuning" --> AA3["Calculate Lambda-Tuning Gains"]
+    Z -- "IMC" --> AA4["Calculate IMC Gains"]
     Z -- "Tyreus-Luyben" --> AA5["Calculate Tyreus-Luyben Gains"]
     AA1 --> AB["Validate Gains"]
     AA2 --> AB

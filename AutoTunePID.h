@@ -7,7 +7,6 @@
 enum class TuningMethod {
     ZieglerNichols, // Ziegler-Nichols tuning method
     CohenCoon, // Cohen-Coon tuning method
-    RelayFeedback, // Relay feedback tuning method
     IMC, // Internal Model Control tuning method
     TyreusLuyben, // Tyreus-Luyben tuning method
     LambdaTuning, // Lambda Tuning (CLD) method
@@ -17,10 +16,9 @@ enum class TuningMethod {
 // Backward compatibility for tuning methods
 constexpr auto ZieglerNichols = TuningMethod::ZieglerNichols;
 constexpr auto CohenCoon = TuningMethod::CohenCoon;
-constexpr auto RelayFeedback = TuningMethod::RelayFeedback;
 constexpr auto IMC = TuningMethod::IMC;
 constexpr auto TyreusLuyben = TuningMethod::TyreusLuyben;
-constexpr auto LambdaTuning = TuningMethod::LambdaTuning; // Add Lambda Tuning (CLD)
+constexpr auto LambdaTuning = TuningMethod::LambdaTuning;
 constexpr auto Manual = TuningMethod::Manual;
 
 // Enumeration for operational modes
@@ -79,7 +77,6 @@ private:
     void performAutoTune(float currentInput); // Perform auto-tuning based on the current input
     void calculateZieglerNicholsGains(); // Calculate PID gains using Ziegler-Nichols method
     void calculateCohenCoonGains(); // Calculate PID gains using Cohen-Coon method
-    void calculateRelayFeedbackGains(); // Calculate PID gains using Relay Feedback method
     void calculateIMCGains(); // Calculate PID gains using IMC method
     void calculateTyreusLuybenGains(); // Calculate PID gains using Tyreus-Luyben method
     void calculateLambdaTuningGains(); // Calculate PID gains using Lambda Tuning (CLD) method
