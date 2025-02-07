@@ -1,4 +1,3 @@
-
 ## **1. Lambda Tuning (CLD)**
 
 ### Formula:
@@ -68,22 +67,22 @@ $ K_d = K_p \cdot 0.37L $
 ### **Automation Workflow**
 
 1. **Induce Oscillations**:
-
+   
    - Use a proportional controller or relay to induce oscillations in the system.
    - Record:
      - $ K_u $: Ultimate gain (oscillation gain).
      - $ T_u $: Oscillation period.
 
 2. **Estimate Process Parameters (if needed)**:
-
+   
    - $ K, T, L $: Derived using $ K_u, T_u $.
 
 3. **Calculate PID Gains**:
-
+   
    - Use the appropriate method (Lambda, IMC, Tyreus-Luyben, Ziegler-Nichols, or Cohen-Coon).
 
 4. **Implement the Controller**:
-
+   
    - Apply the tuned $ K_p $, $ T_i $, and $ T_d $ values in your PID controller.
 
 ---
