@@ -1,6 +1,6 @@
 # Using the AutoTunePID Library
 
-The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **IMC**, **Tyreus-Luyben**, and **Lambda Tuning (CLD)**, as well as manual tuning options. This guide provides a detailed explanation of how to integrate and use the library effectively.
+The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features **automatic tuning** based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **IMC**, **Tyreus-Luyben**, and **Lambda Tuning (CLD)**, as well as **manual tuning** options. This guide provides a detailed explanation of how to integrate and use the library effectively, including all its features.
 
 ---
 
@@ -12,13 +12,16 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 4. [Manual Tuning](#manual-tuning)
 5. [Input and Output Filtering](#input-and-output-filtering)
 6. [Anti-Windup](#anti-windup)
-7. [Updating the Controller](#updating-the-controller)
-8. [Retrieving PID Gains and Output](#retrieving-pid-gains-and-output)
-9. [Auto-Tuning Behavior](#auto-tuning-behavior)
-10. [Operational Modes](#operational-modes)
-11. [Oscillation Modes](#oscillation-modes)
-12. [Example Sketches](#example-sketches)
-13. [Summary of Methods](#summary-of-methods)
+7. [System Corrector](#system-corrector)
+8. [Updating the Controller](#updating-the-controller)
+9. [Retrieving PID Gains and Output](#retrieving-pid-gains-and-output)
+10. [Auto-Tuning Behavior](#auto-tuning-behavior)
+11. [Operational Modes](#operational-modes)
+12. [Oscillation Modes](#oscillation-modes)
+13. [Natural Oscillation Detection](#natural-oscillation-detection)
+14. [Lambda Tuning (CLD)](#lambda-tuning-cld)
+15. [Example Sketches](#example-sketches)
+16. [Summary of Methods](#summary-of-methods)
 
 ---
 
@@ -117,6 +120,20 @@ pidController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% thresh
 ```
 
 This ensures the integral term is constrained when the output approaches its limits.
+
+---
+
+## System Corrector
+
+The **system corrector** monitors the system's response for **instability** (e.g., oscillations or divergence) and applies corrective actions when needed. Use `enableCorrector()` to enable this feature and configure its parameters.
+
+### Example
+
+```cpp
+pidController.enableCorrector(true, 15, 3.0); // Enable corrector with data window size = 15 and stability threshold = 3.0
+```
+
+This enables the corrector with a **data window size of 15** and a **stability threshold of 3.0**.
 
 ---
 
@@ -219,6 +236,34 @@ pidController.setOscillationSteps(15); // Set custom oscillation steps (default 
 ```
 
 This sets the oscillation mode to **Half** and overrides the default steps to **15**.
+
+---
+
+## Natural Oscillation Detection
+
+The library supports **natural oscillation detection** for systems that cannot tolerate forced oscillations. This feature monitors the system's natural oscillations and uses them for auto-tuning.
+
+### Example
+
+```cpp
+pidController.setOscillationDetectionMode(OscillationDetectionMode::NaturalOscillation); // Enable natural oscillation detection
+```
+
+This enables the system to use natural oscillations for auto-tuning, making it suitable for systems requiring near oscillation-less control.
+
+---
+
+## Lambda Tuning (CLD)
+
+The **Lambda Tuning (CLD)** method is designed for systems with **significant dead time**. It uses the **process time constant (`T`)**, **dead time (`L`)**, and a **tuning parameter (`λ`)** to calculate PID gains. This method provides a balance between response speed and robustness.
+
+### Example
+
+```cpp
+pidController.setLambda(0.2); // Set lambda parameter for Lambda Tuning (CLD)
+```
+
+This sets the `lambda` parameter to **0.2**, which controls the trade-off between response speed and stability.
 
 ---
 
@@ -346,6 +391,7 @@ void loop() {
 | `enableInputFilter(float alpha)`      | Enables input filtering with a smoothing factor.      |
 | `enableOutputFilter(float alpha)`     | Enables output filtering with a smoothing factor.     |
 | `enableAntiWindup(bool, float)`       | Enables anti-windup with an optional threshold.       |
+| `enableCorrector(bool, int, float)`   | Enables system corrector with data window size and stability threshold. |
 | `update(float currentInput)`          | Updates the PID controller with the current input.    |
 | `getOutput()`                         | Retrieves the computed PID output.                    |
 | `getKp()`, `getKi()`, `getKd()`       | Retrieves the PID gains.                              |
@@ -353,5 +399,7 @@ void loop() {
 | `setOperationalMode(OperationalMode)` | Sets the operational mode.                            |
 | `setOscillationMode(OscillationMode)` | Sets the oscillation mode for auto-tuning.            |
 | `setOscillationSteps(int steps)`      | Sets the number of oscillation steps for auto-tuning. |
+| `setLambda(float lambda)`             | Sets the lambda parameter for Lambda Tuning (CLD).    |
+| `setOscillationDetectionMode(OscillationDetectionMode)` | Sets the oscillation detection mode (Forced or Natural). |
 
 ---

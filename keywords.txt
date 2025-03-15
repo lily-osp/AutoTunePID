@@ -1,0 +1,56 @@
+#######################################
+# Syntax Coloring Map for AutoTunePID #
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+AutoTunePID	KEYWORD1
+TuningMethod	KEYWORD1
+OperationalMode	KEYWORD1
+OscillationMode	KEYWORD1
+OscillationDetectionMode	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+setSetpoint	KEYWORD2
+setTuningMethod	KEYWORD2
+setManualGains	KEYWORD2
+enableInputFilter	KEYWORD2
+enableOutputFilter	KEYWORD2
+enableAntiWindup	KEYWORD2
+enableCorrector	KEYWORD2
+update	KEYWORD2
+getOutput	KEYWORD2
+getKp	KEYWORD2
+getKi	KEYWORD2
+getKd	KEYWORD2
+getKu	KEYWORD2
+getTu	KEYWORD2
+getSetpoint	KEYWORD2
+getOperationalMode	KEYWORD2
+getLambda	KEYWORD2
+setOperationalMode	KEYWORD2
+setOscillationMode	KEYWORD2
+setOscillationSteps	KEYWORD2
+setLambda	KEYWORD2
+setOscillationDetectionMode	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+ZieglerNichols	LITERAL1
+CohenCoon	LITERAL1
+IMC	LITERAL1
+TyreusLuyben	LITERAL1
+LambdaTuning	LITERAL1
+Manual	LITERAL1
+Normal	LITERAL1
+Reverse	LITERAL1
+Hold	LITERAL1
+Preserve	LITERAL1
+Tune	LITERAL1
+Auto	LITERAL1
+ForcedOscillation	LITERAL1
+NaturalOscillation	LITERAL1

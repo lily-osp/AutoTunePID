@@ -13,14 +13,6 @@ enum class TuningMethod {
     Manual // Manual tuning method
 };
 
-// Backward compatibility for tuning methods
-constexpr auto ZieglerNichols = TuningMethod::ZieglerNichols;
-constexpr auto CohenCoon = TuningMethod::CohenCoon;
-constexpr auto IMC = TuningMethod::IMC;
-constexpr auto TyreusLuyben = TuningMethod::TyreusLuyben;
-constexpr auto LambdaTuning = TuningMethod::LambdaTuning;
-constexpr auto Manual = TuningMethod::Manual;
-
 // Enumeration for operational modes
 enum class OperationalMode {
     Normal, // Normal PID operation
@@ -43,6 +35,9 @@ public:
     // Constructor to initialize the PID controller with min/max output and tuning method
     AutoTunePID(float minOutput, float maxOutput, TuningMethod method = TuningMethod::ZieglerNichols);
 
+    // Destructor to clean up dynamically allocated memory
+    ~AutoTunePID();
+
     // Configuration methods
     void setSetpoint(float setpoint); // Set the desired setpoint
     void setTuningMethod(TuningMethod method); // Set the tuning method
@@ -54,6 +49,9 @@ public:
     void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
     void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
     void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
+
+    // Corrector methods
+    void enableCorrector(bool enable, int dataWindowSize = 10, float stabilityThreshold = 0.1f); // Enable/disable corrector
 
     // Runtime methods
     void update(float currentInput); // Update the PID controller with the current input
@@ -80,6 +78,10 @@ private:
     void calculateIMCGains(); // Calculate PID gains using IMC method
     void calculateTyreusLuybenGains(); // Calculate PID gains using Tyreus-Luyben method
     void calculateLambdaTuningGains(); // Calculate PID gains using Lambda Tuning (CLD) method
+
+    // Corrector methods
+    bool isSystemUnstable(const float* dataPoints, int dataSize); // Check if the system is unstable
+    void applyCorrector(const float* dataPoints, int dataSize); // Apply corrective actions
 
     // Configuration
     const float _minOutput; // Minimum output value
@@ -120,6 +122,13 @@ private:
     float _outputFilteredValue; // Filtered output value
     float _inputFilterAlpha; // Alpha value for input filtering
     float _outputFilterAlpha; // Alpha value for output filtering
+
+    // Corrector
+    bool _correctorEnabled; // Flag to enable/disable corrector
+    int _dataWindowSize; // Number of data points to analyze
+    float _stabilityThreshold; // Threshold for detecting instability
+    float* _dataPoints; // Array to store historical data points
+    int _dataIndex; // Index for circular buffer
 };
 
 #endif

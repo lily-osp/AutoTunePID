@@ -1,3 +1,5 @@
+# V1.1.* examples
+
 # Using the AutoTunePID Library
 
 The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino projects. It features automatic tuning based on methods like **Ziegler-Nichols**, **Cohen-Coon**, **IMC**, **Tyreus-Luyben**, and **Lambda Tuning (CLD)**, as well as manual tuning options. This guide provides detailed examples for each tuning method, including proper pinouts, setpoints, **filtering**, **anti-windup**, **operational modes**, and **oscillation modes**.
