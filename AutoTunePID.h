@@ -3,67 +3,187 @@
 
 #include <Arduino.h>
 
-// Enumeration for different tuning methods
+/**
+ * @brief Enumeration for different tuning methods
+ */
 enum class TuningMethod {
-    ZieglerNichols, // Ziegler-Nichols tuning method
-    CohenCoon, // Cohen-Coon tuning method
-    IMC, // Internal Model Control tuning method
-    TyreusLuyben, // Tyreus-Luyben tuning method
-    LambdaTuning, // Lambda Tuning (CLD) method
-    Manual // Manual tuning method
+    ZieglerNichols, ///< Ziegler-Nichols tuning method
+    CohenCoon,      ///< Cohen-Coon tuning method
+    IMC,            ///< Internal Model Control tuning method
+    TyreusLuyben,   ///< Tyreus-Luyben tuning method
+    LambdaTuning,   ///< Lambda Tuning (CLD) method
+    Manual          ///< Manual tuning method
 };
 
-// Enumeration for operational modes
+/**
+ * @brief Enumeration for operational modes
+ */
 enum class OperationalMode {
-    Normal, // Normal PID operation
-    Reverse, // Reverse PID operation (e.g., for cooling systems)
-    Hold, // Hold the PID calculations to save resources
-    Preserve, // Preserve mode: minimal calculations, keep the system responsive
-    Tune, // Tune mode: perform auto-tuning to get Tu and Ku
-    Auto // Auto mode: automatically determine the best operational mode
+    Normal,   ///< Normal PID operation
+    Reverse,  ///< Reverse PID operation (e.g., for cooling systems)
+    Hold,     ///< Hold the PID calculations to save resources
+    Preserve, ///< Preserve mode: minimal calculations, keep the system responsive
+    Tune,     ///< Tune mode: perform auto-tuning to get Tu and Ku
+    Auto      ///< Auto mode: automatically determine the best operational mode
 };
 
-// Enumeration for oscillation modes
+/**
+ * @brief Enumeration for oscillation modes
+ */
 enum class OscillationMode {
-    Normal, // Full oscillation (MaxOutput - MinOutput)
-    Half, // Half oscillation (1/2 MaxOutput - 1/2 MinOutput)
-    Mild // Mild oscillation (1/4 MaxOutput - 1/4 MinOutput)
+    Normal, ///< Full oscillation (MaxOutput - MinOutput)
+    Half,   ///< Half oscillation (1/2 MaxOutput - 1/2 MinOutput)
+    Mild    ///< Mild oscillation (1/4 MaxOutput - 1/4 MinOutput)
 };
 
+/**
+ * @brief AutoTunePID: A PID controller with auto-tuning and advanced features for Arduino.
+ */
 class AutoTunePID {
 public:
-    // Constructor to initialize the PID controller with min/max output and tuning method
+    /**
+     * @brief Constructor to initialize the PID controller.
+     * @param minOutput Minimum output value
+     * @param maxOutput Maximum output value
+     * @param method Tuning method (default: ZieglerNichols)
+     */
     AutoTunePID(float minOutput, float maxOutput, TuningMethod method = TuningMethod::ZieglerNichols);
 
-    // Destructor to clean up dynamically allocated memory
+    /**
+     * @brief Destructor to clean up dynamically allocated memory.
+     */
     ~AutoTunePID();
 
-    // Configuration methods
-    void setSetpoint(float setpoint); // Set the desired setpoint
-    void setTuningMethod(TuningMethod method); // Set the tuning method
-    void setManualGains(float kp, float ki, float kd); // Set manual PID gains
-    void enableInputFilter(float alpha); // Enable input filtering with a given alpha value
-    void enableOutputFilter(float alpha); // Enable output filtering with a given alpha value
-    void enableAntiWindup(bool enable, float threshold = 0.8f); // Enable/disable anti-windup with optional threshold
-    void setOperationalMode(OperationalMode mode); // Set the operational mode
-    void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
-    void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
-    void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
+    /**
+     * @brief Set the desired setpoint.
+     * @param setpoint The target value for the process variable
+     */
+    void setSetpoint(float setpoint);
 
-    // Corrector methods
-    void enableCorrector(bool enable, int dataWindowSize = 10, float stabilityThreshold = 0.1f); // Enable/disable corrector
+    /**
+     * @brief Set the tuning method.
+     * @param method The tuning method to use
+     */
+    void setTuningMethod(TuningMethod method);
 
-    // Runtime methods
-    void update(float currentInput); // Update the PID controller with the current input
-    float getOutput() const { return _output; } // Get the current output value
-    float getKp() const { return _kp; } // Get the proportional gain (Kp)
-    float getKi() const { return _ki; } // Get the integral gain (Ki)
-    float getKd() const { return _kd; } // Get the derivative gain (Kd)
-    float getKu() const { return _ultimateGain; } // Get the ultimate gain (Ku)
-    float getTu() const { return _oscillationPeriod; } // Get the oscillation period (Tu)
-    float getSetpoint() const { return _setpoint; } // Get the current setpoint
-    OperationalMode getOperationalMode() const { return _operationalMode; } // Get the current operational mode
-    float getLambda() const { return _lambda; } // Get the lambda parameter for Lambda Tuning (CLD)
+    /**
+     * @brief Set manual PID gains.
+     * @param kp Proportional gain
+     * @param ki Integral gain
+     * @param kd Derivative gain
+     */
+    void setManualGains(float kp, float ki, float kd);
+
+    /**
+     * @brief Enable input filtering with a given alpha value.
+     * @param alpha Smoothing factor (0.01 to 1.0)
+     */
+    void enableInputFilter(float alpha);
+
+    /**
+     * @brief Enable output filtering with a given alpha value.
+     * @param alpha Smoothing factor (0.01 to 1.0)
+     */
+    void enableOutputFilter(float alpha);
+
+    /**
+     * @brief Enable or disable anti-windup with optional threshold.
+     * @param enable Enable or disable anti-windup
+     * @param threshold Fraction of output range for windup limit (default: 0.8)
+     */
+    void enableAntiWindup(bool enable, float threshold = 0.8f);
+
+    /**
+     * @brief Set the operational mode.
+     * @param mode The operational mode to use
+     */
+    void setOperationalMode(OperationalMode mode);
+
+    /**
+     * @brief Set the oscillation mode for auto-tuning.
+     * @param mode The oscillation mode
+     */
+    void setOscillationMode(OscillationMode mode);
+
+    /**
+     * @brief Set the number of oscillation steps for auto-tuning.
+     * @param steps Number of oscillation steps
+     */
+    void setOscillationSteps(int steps);
+
+    /**
+     * @brief Set the lambda parameter for Lambda Tuning (CLD).
+     * @param lambda Lambda value
+     */
+    void setLambda(float lambda);
+
+    /**
+     * @brief Enable or disable the corrector for instability detection.
+     * @param enable Enable or disable corrector
+     * @param dataWindowSize Number of data points to analyze (default: 10)
+     * @param stabilityThreshold Threshold for detecting instability (default: 0.1)
+     */
+    void enableCorrector(bool enable, int dataWindowSize = 10, float stabilityThreshold = 0.1f);
+
+    /**
+     * @brief Update the PID controller with the current input.
+     * @param currentInput The current process variable value
+     */
+    void update(float currentInput);
+
+    /**
+     * @brief Get the current output value.
+     * @return Output value
+     */
+    float getOutput() const { return _output; }
+
+    /**
+     * @brief Get the proportional gain (Kp).
+     * @return Kp value
+     */
+    float getKp() const { return _kp; }
+
+    /**
+     * @brief Get the integral gain (Ki).
+     * @return Ki value
+     */
+    float getKi() const { return _ki; }
+
+    /**
+     * @brief Get the derivative gain (Kd).
+     * @return Kd value
+     */
+    float getKd() const { return _kd; }
+
+    /**
+     * @brief Get the ultimate gain (Ku).
+     * @return Ku value
+     */
+    float getKu() const { return _ultimateGain; }
+
+    /**
+     * @brief Get the oscillation period (Tu).
+     * @return Tu value
+     */
+    float getTu() const { return _oscillationPeriod; }
+
+    /**
+     * @brief Get the current setpoint.
+     * @return Setpoint value
+     */
+    float getSetpoint() const { return _setpoint; }
+
+    /**
+     * @brief Get the current operational mode.
+     * @return OperationalMode enum value
+     */
+    OperationalMode getOperationalMode() const { return _operationalMode; }
+
+    /**
+     * @brief Get the lambda parameter for Lambda Tuning (CLD).
+     * @return Lambda value
+     */
+    float getLambda() const { return _lambda; }
 
 private:
     // PID computation

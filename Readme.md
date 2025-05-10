@@ -51,38 +51,60 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 
 ---
 
-## Installation
+## Getting Started
 
-1. Download the library as a ZIP file.
-2. In the Arduino IDE, go to **Sketch > Include Library > Add .ZIP Library**.
-3. Select the downloaded ZIP file.
-4. Restart the Arduino IDE.
+### Installation
+1. Copy the `AutoTunePID` library folder into your Arduino `libraries` directory.
+2. Restart the Arduino IDE.
+3. Open **File > Examples > AutoTunePID > BasicUsage** to get started.
 
----
-
-## Quick Start
+### Basic Example
+See [`examples/BasicUsage/BasicUsage.ino`](examples/BasicUsage/BasicUsage.ino) for a minimal usage example.
 
 ```cpp
 #include <AutoTunePID.h>
 
-// Initialize PID controller with output range and tuning method
 AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
 
 void setup() {
-  pid.setSetpoint(100.0); // Target setpoint
-  pid.enableInputFilter(0.1); // Optional input filtering
-  pid.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
-  pid.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
-  pid.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
-  pid.enableCorrector(true, 10, 5.0); // Enable corrector with data window size and stability threshold
+  Serial.begin(9600);
+  pid.setSetpoint(100); // Target value
 }
 
 void loop() {
-  float input = analogRead(A0); // Read input
-  pid.update(input); // Update the PID controller
-  analogWrite(PWM_PIN, pid.getOutput()); // Write output
+  float input = analogRead(A0); // Simulated process variable
+  pid.update(input);
+  float output = pid.getOutput();
+  analogWrite(3, output); // Simulated actuator
+  Serial.print("Input: "); Serial.print(input);
+  Serial.print(" Output: "); Serial.println(output);
+  delay(100);
 }
 ```
+
+## Tuning Methods
+- **Ziegler-Nichols:** Classic method for aggressive tuning, good for fast response but may overshoot.
+- **Cohen-Coon:** Better for processes with significant dead time.
+- **IMC (Internal Model Control):** Provides a balance between performance and robustness.
+- **Tyreus-Luyben:** More conservative than Ziegler-Nichols, less overshoot.
+- **Lambda Tuning (CLD):** Good for setpoint tracking and disturbance rejection.
+- **Manual:** User sets Kp, Ki, Kd directly.
+
+See [docs/2. Formula.md](docs/2. Formula.md) for detailed formulas and [docs/3. Usage.md](docs/3. Usage.md) for advanced usage.
+
+## Troubleshooting / FAQ
+- **Q: My output is always zero or maxed out.**
+  - A: Check your input range and setpoint. Ensure the PID gains are reasonable.
+- **Q: Auto-tuning never finishes.**
+  - A: Make sure your process can oscillate and the system is not too slow or too fast for the default settings.
+- **Q: How do I use a different tuning method?**
+  - A: Use `pid.setTuningMethod(TuningMethod::IMC);` or another method before calling `update()`.
+- **Q: Can I use this with non-Arduino platforms?**
+  - A: The core logic is standard C++, but timing and IO are Arduino-specific by default.
+
+## More Documentation
+- See the `docs/` folder for detailed explanations, hardware design, and configuration options.
+- Each example in `examples/` has its own README for setup and expected results.
 
 ---
 
