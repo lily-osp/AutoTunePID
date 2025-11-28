@@ -185,7 +185,10 @@ The library supports **multiple operational modes** to adapt the PID controller'
 
 - **Normal**: Standard PID operation (error = setpoint - input).
 - **Reverse**: Reverses the error calculation for cooling systems (error = input - setpoint).
-- **Hold**: Stops all calculations and sets output to zero to save resources.
+- **Manual**: Direct output control (0-100%), bypasses PID calculations entirely.
+- **Override**: Emergency override with fixed output value for safety conditions.
+- **Track**: Output follows a reference signal, useful for startup/shutdown sequences.
+- **Hold**: Stops all calculations and maintains current output to save resources.
 - **Preserve**: Minimal calculations with error monitoring, maintains system responsiveness.
 - **Tune**: Performs auto-tuning to determine `Tu` and `Ku`.
 - **Auto**: Automatically selects the best operational mode based on system behavior.
@@ -208,6 +211,70 @@ pid.setOperationalMode(OperationalMode::Reverse);
 - Temp = 15°C: Error = 15-12 = +3 → **COOLING ON**
 - Temp = 10°C: Error = 10-12 = -2 → **COOLING OFF**
 - Temp = 12°C: Error = 0 → **COOLING OFF**
+
+### Manual Mode for Direct Control
+
+The **Manual mode** allows direct control of the output without PID calculations:
+
+```cpp
+// Switch to manual control
+pid.setOperationalMode(OperationalMode::Manual);
+pid.setManualOutput(75.0); // Set output to 75%
+
+// In the control loop:
+pid.update(currentInput); // This will output 75% regardless of input
+```
+
+**Use cases:**
+- Testing actuator response
+- Emergency manual override
+- Calibration procedures
+- Maintenance operations
+
+### Override Mode for Safety
+
+The **Override mode** provides emergency override with a fixed output value:
+
+```cpp
+// Emergency shutdown - set output to minimum
+pid.setOperationalMode(OperationalMode::Override);
+pid.setOverrideOutput(0.0); // Force output to 0
+
+// Safety valve activation - set output to maximum
+pid.setOperationalMode(OperationalMode::Override);
+pid.setOverrideOutput(100.0); // Force output to maximum
+```
+
+**Use cases:**
+- Emergency shutdown procedures
+- Safety interlock activation
+- System protection protocols
+
+### Track Mode for Startup/Shutdown
+
+The **Track mode** makes the output follow a reference signal:
+
+```cpp
+// Startup sequence - gradually increase output
+pid.setOperationalMode(OperationalMode::Track);
+for(float ref = 0; ref <= 100; ref += 10) {
+    pid.setTrackReference(ref);
+    pid.update(currentInput); // Output follows reference
+    delay(1000);
+}
+
+// Shutdown sequence - gradually decrease output
+for(float ref = 100; ref >= 0; ref -= 10) {
+    pid.setTrackReference(ref);
+    pid.update(currentInput); // Output follows reference
+    delay(1000);
+}
+```
+
+**Use cases:**
+- Controlled startup/shutdown sequences
+- Bumpless transfer between control modes
+- System commissioning procedures
 
 ### Example
 

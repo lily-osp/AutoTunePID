@@ -347,5 +347,6 @@ This provides intuitive behavior for cooling applications where you want to acti
 | **Lambda Tuning**   | Flow Control                 | A0        | 11         | 50.0 L/min       | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
 | **Manual Tuning**   | Generic Control System       | A0        | 12         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
 | **Reverse Mode**    | Peltier Cooling              | A0        | 9          | 12.0°C           | 0.1              | N/A               | 80%                   | N/A              | Reverse          |
+| **Operational Modes**| Control Modes Demo            | A0        | 9          | 50.0 (Analog)    | 2.0              | 0.5               | 0.1                   | N/A              | All Modes        |
 
 ---

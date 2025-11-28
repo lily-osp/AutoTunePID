@@ -25,6 +25,9 @@ constexpr auto Manual = TuningMethod::Manual;
 enum class OperationalMode {
     Normal, // Normal PID operation
     Reverse, // Reverse PID operation (e.g., for cooling systems)
+    Manual, // Manual mode: direct output control, bypass PID calculations
+    Override, // Override mode: emergency override with fixed output value
+    Track, // Track mode: output follows a reference signal
     Hold, // Hold the PID calculations to save resources
     Preserve, // Preserve mode: minimal calculations, keep the system responsive
     Tune, // Tune mode: perform auto-tuning to get Tu and Ku
@@ -51,6 +54,9 @@ public:
     void enableOutputFilter(float alpha); // Enable output filtering with a given alpha value
     void enableAntiWindup(bool enable, float threshold = 0.8f); // Enable/disable anti-windup with optional threshold
     void setOperationalMode(OperationalMode mode); // Set the operational mode
+    void setManualOutput(float output); // Set manual output value (0-100% for Manual mode)
+    void setOverrideOutput(float output); // Set override output value
+    void setTrackReference(float reference); // Set track reference signal
     void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
     void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
     void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
@@ -90,6 +96,11 @@ private:
     int _oscillationSteps; // Number of oscillation steps for auto-tuning
     float _setpoint; // Desired setpoint
     float _lambda; // Lambda parameter for Lambda Tuning (CLD)
+
+    // Manual, Override, and Track mode parameters
+    float _manualOutput; // Manual output value (0-100%)
+    float _overrideOutput; // Override output value
+    float _trackReference; // Track reference signal
 
     // PID parameters
     float _kp, _ki, _kd; // Proportional, integral, and derivative gains

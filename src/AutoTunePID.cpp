@@ -9,6 +9,9 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _oscillationSteps(10)
     , _setpoint(0)
     , _lambda(0.5f) // Default lambda value
+    , _manualOutput(0) // Default manual output to 0%
+    , _overrideOutput(0) // Default override output to 0
+    , _trackReference(0) // Default track reference to 0
     , _kp(0)
     , _ki(0)
     , _kd(0)
@@ -79,6 +82,21 @@ void AutoTunePID::setOperationalMode(OperationalMode mode)
     }
 }
 
+void AutoTunePID::setManualOutput(float output)
+{
+    _manualOutput = constrain(output, 0, 100); // Constrain to 0-100%
+}
+
+void AutoTunePID::setOverrideOutput(float output)
+{
+    _overrideOutput = constrain(output, _minOutput, _maxOutput);
+}
+
+void AutoTunePID::setTrackReference(float reference)
+{
+    _trackReference = reference;
+}
+
 void AutoTunePID::setOscillationMode(OscillationMode mode)
 {
     _oscillationMode = mode;
@@ -126,9 +144,21 @@ void AutoTunePID::update(float currentInput)
 
     if (_operationalMode == OperationalMode::Tune) {
         performAutoTune(currentInput);
+    } else if (_operationalMode == OperationalMode::Manual) {
+        // Manual mode: direct output control, bypass PID calculations
+        _output = map(_manualOutput, 0, 100, _minOutput, _maxOutput);
+        return;
+    } else if (_operationalMode == OperationalMode::Override) {
+        // Override mode: emergency override with fixed output value
+        _output = _overrideOutput;
+        return;
+    } else if (_operationalMode == OperationalMode::Track) {
+        // Track mode: output follows a reference signal
+        _output = constrain(_trackReference, _minOutput, _maxOutput);
+        return;
     } else if (_operationalMode == OperationalMode::Hold) {
         // Hold mode: maintain current output, skip all calculations
-        _output = 0; // Or maintain last output? For now, set to 0
+        // Keep the last computed output value
         return;
     } else if (_operationalMode == OperationalMode::Preserve) {
         // Preserve mode: minimal calculations, keep system responsive
