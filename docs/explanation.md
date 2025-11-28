@@ -6,11 +6,12 @@ This guide provides an in-depth explanation of various PID tuning algorithms ava
 
 - [1. Ziegler-Nichols Tuning Method](#1-ziegler-nichols-tuning-method)
 - [2. Cohen-Coon Tuning Method](#2-cohen-coon-tuning-method)
-- [3. IMC-Based Tuning (Internal Model Control)](#3-imc-based-tuning-internal-model-control)
+- [3. IMC-Based Tuning Method](#3-imc-based-tuning-method)
 - [4. Tyreus-Luyben Tuning Method](#4-tyreus-luyben-tuning-method)
-- [5. Lambda Tuning (CLD)](#5-lambda-tuning-cld)
-- [6. Manual Tuning](#6-manual-tuning)
-- [Comparison Table](#comparison-table)
+- [5. Lambda Tuning (CLD) Method](#5-lambda-tuning-cld-method)
+- [6. Manual Tuning Method](#6-manual-tuning-method)
+- [Algorithm Comparison](#algorithm-comparison)
+- [Choosing the Right Method](#choosing-the-right-method)
 
 ---
 
@@ -37,15 +38,9 @@ The Ziegler-Nichols method is one of the oldest and most widely used tuning appr
    - Measure and note the ultimate gain (‘Ku’) and ultimate period (‘Tu’).
 4. **Calculate PID Gains:**
    - Use the following formulas to calculate the PID parameters:
-     - $$
-K_p = 0.6 \cdot K_u
-$$
-     - $$
-K_i = 1.2 \cdot K_p / T_u
-$$
-     - $$
-K_d = 0.075 \cdot K_p \cdot T_u
-$$
+     - $ Kp = 0.6 \cdot Ku $
+     - $ Ki = 1.2 \cdot Kp / Tu $
+     - $ Kd = 0.075 \cdot Kp \cdot Tu $
 
 ### Strengths
 
@@ -85,15 +80,9 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
    - Measure the ultimate gain ('Ku') and ultimate period ('Tu').
 2. **Calculate PID Gains:**
    - Use the following formulas (simplified but effective):
-     - $$
-K_p = 0.8 \cdot K_u
-$$
-     - $$
-K_i = K_p / (0.8 \cdot T_u)
-$$
-     - $$
-K_d = 0.194 \cdot K_p \cdot T_u
-$$
+     - $ Kp = 0.8 \cdot Ku $
+     - $ Ki = Kp / (0.8 \cdot Tu) $
+     - $ Kd = 0.194 \cdot Kp \cdot Tu $
 
 ### Strengths
 
@@ -132,15 +121,9 @@ IMC-Based Tuning uses a process model to compute PID parameters, emphasizing rob
      - Smaller 'λ' for faster response.
      - Larger 'λ' for smoother, more stable response.
 3. **Calculate PID Gains:**
-    - $$
-K_p = T / (\lambda + L)
-$$
-    - $$
-K_i = K_p / T
-$$
-    - $$
-K_d = K_p \cdot L / 2
-$$
+   - $ Kp = T / (\lambda + L) $
+   - $ Ki = Kp / T $
+   - $ Kd = Kp \cdot L / 2 $
 
 ### Strengths
 
@@ -179,15 +162,9 @@ The Tyreus-Luyben method is a robust tuning approach designed to minimize oversh
    - Measure the ultimate gain (‘Ku’) and ultimate period (‘Tu’).
 3. **Calculate PID Gains:**
    - Use the following formulas:
-     - $$
-K_p = 0.45 \cdot K_u
-$$
-     - $$
-K_i = K_p / (2.2 \cdot T_u)
-$$
-     - $$
-K_d = 0.0
-$$ (No derivative term)
+     - $ Kp = 0.45 \cdot Ku $
+     - $ Ki = Kp / (2.2 \cdot Tu) $
+     - $ Kd = 0.0 $ (No derivative term)
 
 ### Strengths
 
@@ -226,15 +203,9 @@ The **Lambda Tuning (CLD)** method is designed for systems with significant dead
    - Choose \( \lambda \) based on the desired trade-off between response speed and robustness.
 3. **Calculate PID Gains:**
    - Use the following formulas:
-     - $$
-K_p = \frac{T}{\lambda + L}
-$$
-     - $$
-K_i = \frac{K_p}{T}
-$$
-     - $$
-K_d = 0.5 \cdot K_p \cdot L
-$$
+     - $ Kp = \frac{T}{\lambda + L} $
+     - $ Ki = \frac{Kp}{T} $
+     - $ Kd = 0.5 \cdot Kp \cdot L $
 
 ### Strengths
 

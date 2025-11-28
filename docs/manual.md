@@ -5,19 +5,21 @@ This document is a detailed, step-by-step tutorial for manually tuning PID (Prop
 ## Table of Contents
 
 - [1. What is a PID Controller?](#1-what-is-a-pid-controller)
-- [2. Tools and Preparation](#2-tools-and-preparation)
-- [3. Step-by-Step Tuning Process](#3-step-by-step-tuning-process)
-  - [Step 1: Prepare the System](#step-1-prepare-the-system)
-  - [Step 2: Tune the Proportional Gain (Kp)](#step-2-tune-the-proportional-gain-kp)
-  - [Step 3: Tune the Integral Gain (Ki)](#step-3-tune-the-integral-gain-ki)
-  - [Step 4: Tune the Derivative Gain (Kd)](#step-4-tune-the-derivative-gain-kd)
-  - [Step 5: Fine-Tune and Test](#step-5-fine-tune-and-test)
-- [4. Optional: Ziegler-Nichols Method](#4-optional-ziegler-nichols-method)
-- [5. Common Issues and Fixes](#5-common-issues-and-fixes)
+- [2. Understanding PID Parameters](#2-understanding-pid-parameters)
+- [3. Initial Setup](#3-initial-setup)
+- [4. Manual Tuning Procedure](#4-manual-tuning-procedure)
+  - [Step 1: Proportional Tuning](#step-1-proportional-tuning)
+  - [Step 2: Integral Tuning](#step-2-integral-tuning)
+  - [Step 3: Derivative Tuning](#step-3-derivative-tuning)
+  - [Step 4: Fine Tuning](#step-4-fine-tuning)
+- [5. Common Issues and Solutions](#5-common-issues-and-solutions)
+- [6. Advanced Techniques](#6-advanced-techniques)
+- [7. Best Practices](#7-best-practices)
+- [8. Troubleshooting](#8-troubleshooting)
 
 ---
 
-## 1. What is a PID Controller?
+## **1. What is a PID Controller?**
 
 A PID controller is a widely used control loop mechanism in engineering that adjusts the output of a system (like a motor, temperature, or position) based on three key factors:
 

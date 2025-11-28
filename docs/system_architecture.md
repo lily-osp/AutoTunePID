@@ -9,7 +9,6 @@ The AutoTunePID Arduino library implements a comprehensive PID (Proportional-Int
 - [Overview](#overview)
 - [Architectural Principles](#architectural-principles)
 - [Core Architecture](#core-architecture)
-- [Data Flow Architecture](#data-flow-architecture)
 - [Algorithm Implementations](#algorithm-implementations)
 - [Memory Management](#memory-management)
 - [Performance Characteristics](#performance-characteristics)
