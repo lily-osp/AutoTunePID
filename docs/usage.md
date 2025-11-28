@@ -183,12 +183,31 @@ When **auto-tuning** is enabled, the library uses one of the supported methods (
 
 The library supports **multiple operational modes** to adapt the PID controller's behavior based on the system's needs. Use `setOperationalMode()` to select one of the following modes:
 
-- **Normal**: Standard PID operation.
-- **Reverse**: Reverses the error calculation for cooling systems.
-- **Hold**: Stops all calculations to save resources.
-- **Preserve**: Minimal calculations to keep the system responsive.
+- **Normal**: Standard PID operation (error = setpoint - input).
+- **Reverse**: Reverses the error calculation for cooling systems (error = input - setpoint).
+- **Hold**: Stops all calculations and sets output to zero to save resources.
+- **Preserve**: Minimal calculations with error monitoring, maintains system responsiveness.
 - **Tune**: Performs auto-tuning to determine `Tu` and `Ku`.
 - **Auto**: Automatically selects the best operational mode based on system behavior.
+
+### Reverse Mode for Cooling Systems
+
+The **Reverse mode** is specifically designed for cooling applications where you want to activate cooling when the measured value exceeds the setpoint:
+
+```cpp
+// For cooling systems (e.g., Peltier cells, refrigeration)
+pid.setOperationalMode(OperationalMode::Reverse);
+```
+
+**Behavior:**
+- When `input > setpoint`: Error is **positive** → Cooling activated (positive output)
+- When `input < setpoint`: Error is **negative** → Cooling deactivated
+- When `input = setpoint`: Error is **zero** → Cooling deactivated
+
+**Example:** Temperature control at 12°C
+- Temp = 15°C: Error = 15-12 = +3 → **COOLING ON**
+- Temp = 10°C: Error = 10-12 = -2 → **COOLING OFF**
+- Temp = 12°C: Error = 0 → **COOLING OFF**
 
 ### Example
 

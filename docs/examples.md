@@ -12,6 +12,7 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 4. [Tyreus-Luyben Example with Filtering, Anti-Windup, and Oscillation Modes](#tyreus-luyben-example-with-filtering-anti-windup-and-oscillation-modes)
 5. [Lambda Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#lambda-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
 6. [Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#manual-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
+7. [Peltier Cooling Example with Reverse Mode](#peltier-cooling-example-with-reverse-mode)
 
 ---
 
@@ -252,6 +253,89 @@ void loop() {
 
 ---
 
+## Peltier Cooling Example with Reverse Mode
+
+### Peltier Cell Temperature Control
+
+This example demonstrates how to use the **Reverse mode** for cooling systems, specifically for controlling a Peltier cell to maintain a target temperature. In cooling applications, you want to activate cooling when the temperature exceeds the setpoint.
+
+#### Pin Configuration
+
+- **Input Pin**: A0 (Temperature Sensor)
+- **Output Pin**: 9 (Peltier Cell PWM Control)
+- **Setpoint**: 12.0°C
+
+#### Code
+
+```cpp
+#include "AutoTunePID.h"
+
+// Pin definitions
+const int tempSensorPin = A0; // Analog input pin for temperature sensor
+const int peltierPin = 9;     // PWM output pin for Peltier cell control
+
+// PID parameters
+float setpoint = 12.0; // Desired temperature in °C
+AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols); // Create PID controller
+
+void setup() {
+    Serial.begin(9600); // Initialize serial communication
+    pinMode(tempSensorPin, INPUT); // Set temperature sensor pin as input
+    pinMode(peltierPin, OUTPUT);   // Set Peltier control pin as output
+
+    // Configure PID controller for cooling system
+    pid.setSetpoint(setpoint); // Set target temperature to 12°C
+    pid.enableInputFilter(0.1);  // Enable input filtering for stable readings
+    pid.enableAntiWindup(true, 0.8); // Enable anti-windup protection
+    pid.setOperationalMode(OperationalMode::Reverse); // Use Reverse mode for cooling
+}
+
+void loop() {
+    // Read temperature sensor (assuming 0-100°C range, adjust formula as needed)
+    float currentTemp = analogRead(tempSensorPin) * (100.0 / 1023.0);
+
+    // Update PID controller
+    pid.update(currentTemp);
+
+    // Get the computed output (0-255 for PWM control)
+    float output = pid.getOutput();
+
+    // Apply output to Peltier cell (PWM control)
+    analogWrite(peltierPin, output);
+
+    // Print debugging information
+    Serial.print("Temperature: ");
+    Serial.print(currentTemp);
+    Serial.print("°C | Setpoint: ");
+    Serial.print(setpoint);
+    Serial.print("°C | Output: ");
+    Serial.print(output);
+
+    // Determine cooling status
+    if (output > 10) { // Small threshold to avoid noise
+        Serial.print(" | Status: COOLING");
+    } else {
+        Serial.print(" | Status: IDLE");
+    }
+
+    Serial.println();
+
+    // Small delay to maintain consistent sample time
+    delay(100);
+}
+```
+
+#### Explanation
+
+In **Reverse mode** for cooling systems:
+- When `temperature > 12°C`: Error is positive → Cooling activated
+- When `temperature < 12°C`: Error is negative → Cooling deactivated
+- When `temperature = 12°C`: Error is zero → Cooling deactivated
+
+This provides intuitive behavior for cooling applications where you want to activate the Peltier cell when the temperature rises above the target.
+
+---
+
 ## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
 | Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint         | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
@@ -262,5 +346,6 @@ void loop() {
 | **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C           | 0.1              | 0.1               | 80%                   | Half             | Tune             |
 | **Lambda Tuning**   | Flow Control                 | A0        | 11         | 50.0 L/min       | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
 | **Manual Tuning**   | Generic Control System       | A0        | 12         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
+| **Reverse Mode**    | Peltier Cooling              | A0        | 9          | 12.0°C           | 0.1              | N/A               | 80%                   | N/A              | Reverse          |
 
 ---

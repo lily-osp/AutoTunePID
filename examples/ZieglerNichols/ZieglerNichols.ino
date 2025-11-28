@@ -18,6 +18,9 @@ void setup()
     pid.setSetpoint(setpoint); // Set the desired setpoint
     pid.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half (default steps = 20)
     pid.setOperationalMode(OperationalMode::Tune); // Start in Tune mode for auto-tuning
+
+    // Example of switching to Reverse mode after tuning (for cooling systems):
+    // pid.setOperationalMode(OperationalMode::Reverse);
 }
 
 void loop()

@@ -126,8 +126,28 @@ void AutoTunePID::update(float currentInput)
 
     if (_operationalMode == OperationalMode::Tune) {
         performAutoTune(currentInput);
+    } else if (_operationalMode == OperationalMode::Hold) {
+        // Hold mode: maintain current output, skip all calculations
+        _output = 0; // Or maintain last output? For now, set to 0
+        return;
+    } else if (_operationalMode == OperationalMode::Preserve) {
+        // Preserve mode: minimal calculations, keep system responsive
+        // Only update error for monitoring, skip PID calculations
+        if (_operationalMode == OperationalMode::Reverse) {
+            _error = _input - _setpoint;
+        } else {
+            _error = _setpoint - _input;
+        }
+        // Keep previous output, don't update PID terms
+        return;
     } else {
-        _error = _setpoint - _input;
+        // Normal or Reverse mode
+        // Calculate error based on operational mode
+        if (_operationalMode == OperationalMode::Reverse) {
+            _error = _input - _setpoint; // Reverse error calculation for cooling systems
+        } else {
+            _error = _setpoint - _input; // Normal error calculation
+        }
 
         // Reset integral term if error is zero (faster and smoother zeroing)
         if (abs(_error) < 0.001) {
