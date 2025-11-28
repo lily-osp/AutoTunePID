@@ -2,6 +2,23 @@
 
 Welcome to the AutoTunePID library! This guide will help you get started quickly with basic PID control. Whether you're new to PID controllers or experienced, this guide will walk you through your first implementation.
 
+## Table of Contents
+
+- [Quick Start (5 Minutes)](#quick-start-5-minutes)
+  - [Step 1: Installation](#step-1-installation)
+  - [Step 2: Basic PID Control](#step-2-basic-pid-control)
+  - [Step 3: Test Your Setup](#step-3-test-your-setup)
+- [Understanding the Basics](#understanding-the-basics)
+  - [What is PID Control?](#what-is-pid-control)
+  - [Key Concepts](#key-concepts)
+  - [Tuning Methods](#tuning-methods)
+- [Common Applications](#common-applications)
+  - [Temperature Control](#temperature-control)
+  - [Motor Speed Control](#motor-speed-control)
+  - [Position Control](#position-control)
+- [Next Steps](#next-steps)
+- [Need Help?](#need-help)
+
 ## Quick Start (5 Minutes)
 
 ### Step 1: Installation
@@ -154,4 +171,4 @@ servo.write(pid.getOutput());
 - **Documentation**: See all docs in `docs/` folder
 - **Issues**: Report bugs on [GitHub Issues](https://github.com/lily-osp/AutoTunePID/issues)
 
-**Happy controlling!** 🎛️🤖
+**Happy controlling!**

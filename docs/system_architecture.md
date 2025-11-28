@@ -4,6 +4,21 @@
 
 The AutoTunePID Arduino library implements a comprehensive PID (Proportional-Integral-Derivative) control system with advanced auto-tuning capabilities. The library is designed as a self-contained C++ class that encapsulates all necessary logic for PID control, auto-tuning algorithms, signal processing, and system stability management.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Architectural Principles](#architectural-principles)
+- [Core Architecture](#core-architecture)
+- [Data Flow Architecture](#data-flow-architecture)
+- [Algorithm Implementations](#algorithm-implementations)
+- [Memory Management](#memory-management)
+- [Performance Characteristics](#performance-characteristics)
+- [Extensibility Architecture](#extensibility-architecture)
+- [Safety and Robustness](#safety-and-robustness)
+- [Testing and Validation](#testing-and-validation)
+- [Future Extensibility](#future-extensibility)
+- [Conclusion](#conclusion)
+
 ## Architectural Principles
 
 ### Design Philosophy

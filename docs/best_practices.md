@@ -2,6 +2,19 @@
 
 This guide provides recommendations for optimal AutoTunePID usage, performance optimization, and robust control system design.
 
+## Table of Contents
+
+- [System Design Principles](#system-design-principles)
+- [PID Controller Configuration](#pid-controller-configuration)
+- [Signal Processing](#signal-processing)
+- [Performance Optimization](#performance-optimization)
+- [Robustness and Safety](#robustness-and-safety)
+- [Application-Specific Guidelines](#application-specific-guidelines)
+- [Testing and Validation](#testing-and-validation)
+- [Maintenance and Updates](#maintenance-and-updates)
+- [Advanced Techniques](#advanced-techniques)
+- [Conclusion](#conclusion)
+
 ## System Design Principles
 
 ### 1. Understand Your Process
@@ -435,4 +448,4 @@ void adaptiveTuning() {
 4. Monitor performance continuously
 5. Document your configuration and rationale
 
-**Remember:** PID control is as much art as science. The best settings come from understanding your specific system and iterative tuning! 🎛️⚙️
+**Remember:** PID control is as much art as science. The best settings come from understanding your specific system and iterative tuning!

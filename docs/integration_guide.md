@@ -2,6 +2,32 @@
 
 This guide shows how to integrate AutoTunePID with other Arduino libraries, sensors, actuators, and external systems.
 
+## Table of Contents
+
+- [Sensor Integration](#sensor-integration)
+  - [Analog Sensors](#analog-sensors)
+  - [Digital Sensors](#digital-sensors)
+- [Actuator Integration](#actuator-integration)
+  - [PWM Actuators](#pwm-actuators)
+  - [Servo Integration](#servo-integration)
+- [Library Integration](#library-integration)
+  - [With Timer Libraries](#with-timer-libraries)
+  - [With Communication Libraries](#with-communication-libraries)
+  - [With Data Logging](#with-data-logging)
+- [External System Integration](#external-system-integration)
+  - [Modbus RTU (Industrial Protocol)](#modbus-rtu-industrial-protocol)
+  - [MQTT Integration (IoT)](#mqtt-integration-iot)
+- [Multi-Controller Systems](#multi-controller-systems)
+  - [Cascade Control](#cascade-control)
+  - [Ratio Control](#ratio-control)
+- [Performance Optimization](#performance-optimization)
+  - [Interrupt-Driven Control](#interrupt-driven-control)
+  - [Memory-Efficient Configurations](#memory-efficient-configurations)
+- [Safety Integration](#safety-integration)
+  - [Watchdog Timer](#watchdog-timer)
+- [Testing Integration](#testing-integration)
+  - [Automated Test Suite](#automated-test-suite)
+
 ## Sensor Integration
 
 ### Analog Sensors
@@ -721,4 +747,4 @@ void setup() {
 }
 ```
 
-Remember: When integrating AutoTunePID with other systems, always consider timing constraints, resource limitations, and safety requirements. Test thoroughly and implement appropriate error handling! 🔧⚙️
+Remember: When integrating AutoTunePID with other systems, always consider timing constraints, resource limitations, and safety requirements. Test thoroughly and implement appropriate error handling!

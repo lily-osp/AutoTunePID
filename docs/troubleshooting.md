@@ -2,6 +2,21 @@
 
 This guide helps you diagnose and solve common issues with the AutoTunePID library. Follow the systematic approach below to identify and resolve problems.
 
+## Table of Contents
+
+- [Quick Diagnosis Checklist](#quick-diagnosis-checklist)
+- [Common Issues and Solutions](#common-issues-and-solutions)
+  - [Issue 1: No Output Response](#issue-1-no-output-response)
+  - [Issue 2: Violent Oscillation](#issue-2-violent-oscillation)
+  - [Issue 3: Slow or No Response](#issue-3-slow-or-no-response)
+  - [Issue 4: Integral Windup](#issue-4-integral-windup)
+  - [Issue 5: Auto-Tuning Problems](#issue-5-auto-tuning-problems)
+  - [Issue 6: Operational Mode Problems](#issue-6-operational-mode-problems)
+- [Advanced Diagnostics](#advanced-diagnostics)
+- [System-Specific Issues](#system-specific-issues)
+- [Getting Help](#getting-help)
+- [Emergency Procedures](#emergency-procedures)
+
 ## Quick Diagnosis Checklist
 
 ### Before You Start
@@ -396,4 +411,4 @@ delay(2000); // Allow settling
 pid.setOperationalMode(OperationalMode::Normal);
 ```
 
-Remember: Start simple, add complexity gradually, and always test safety-critical systems thoroughly! 🛡️
+Remember: Start simple, add complexity gradually, and always test safety-critical systems thoroughly!
