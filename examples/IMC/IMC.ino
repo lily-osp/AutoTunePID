@@ -16,6 +16,7 @@ void setup()
 
     // Configure PID controller
     pid.setSetpoint(setpoint); // Set the desired setpoint
+    pid.setLambda(0.5); // Set lambda parameter for IMC tuning
     pid.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half (default steps = 20)
     pid.setOperationalMode(OperationalMode::Tune); // Start in Tune mode for auto-tuning
 }

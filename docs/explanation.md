@@ -64,11 +64,11 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
 
 ### Steps
 
-1. **Identify System Parameters:**
-   - Apply a step input to the system.
-   - Measure the process gain (‘K’), time constant (‘τ’), and dead time (‘L’).
+1. **Induce Oscillations:**
+   - Use a relay or proportional controller to drive the system into oscillation.
+   - Measure the ultimate gain ('Ku') and ultimate period ('Tu').
 2. **Calculate PID Gains:**
-   - Use the following formulas:
+   - Use the following formulas (simplified but effective):
      - $ Kp = 0.8 \cdot Ku $
      - $ Ki = Kp / (0.8 \cdot Tu) $
      - $ Kd = 0.194 \cdot Kp \cdot Tu $
@@ -103,16 +103,16 @@ IMC-Based Tuning uses a process model to compute PID parameters, emphasizing rob
 
 ### Steps
 
-1. **Obtain Process Model:**
-   - Measure the process gain (‘K’), time constant (‘τ’), and dead time (‘L’).
-2. **Select ‘λ’:**
-   - Choose ‘λ’ based on desired trade-off:
-     - Smaller ‘λ’ for faster response.
-     - Larger ‘λ’ for smoother, more stable response.
+1. **Obtain Process Parameters:**
+   - Measure or estimate the process time constant ('T') and dead time ('L').
+2. **Select 'λ':**
+   - Choose 'λ' based on desired trade-off:
+     - Smaller 'λ' for faster response.
+     - Larger 'λ' for smoother, more stable response.
 3. **Calculate PID Gains:**
-   - $ Kp = 0.4 \cdot Ku $
-   - $ Ki = Kp / (2.0 \cdot \lambda) $
-   - $ Kd = 0.5 \cdot Kp \cdot \lambda $
+   - $ Kp = T / (\lambda + L) $
+   - $ Ki = Kp / T $
+   - $ Kd = Kp \cdot L / 2 $
 
 ### Strengths
 
@@ -187,14 +187,14 @@ The **Lambda Tuning (CLD)** method is designed for systems with significant dead
 ### Steps
 
 1. **Estimate System Parameters:**
-   - Measure the process time constant (\( T \)) and dead time (\( L \)).
+   - Measure or estimate the process time constant (\( T \)) and dead time (\( L \)).
 2. **Select \( \lambda \):**
    - Choose \( \lambda \) based on the desired trade-off between response speed and robustness.
 3. **Calculate PID Gains:**
    - Use the following formulas:
-     - $ Kp = \frac{T}{K(\lambda + L)} $
-     - $ Ki = \frac{Kp}{T} = \frac{1}{K(\lambda + L)} $
-     - $ Kd = Kp \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)} $
+     - $ Kp = \frac{T}{\lambda + L} $
+     - $ Ki = \frac{Kp}{T} $
+     - $ Kd = 0.5 \cdot Kp \cdot L $
 
 ### Strengths
 
@@ -263,8 +263,8 @@ Manual tuning offers complete control over the PID parameters (‘Kp’, ‘Ki�
 | Algorithm            | Complexity    | Tuning Speed | Tuning Requirements                                                                             | Simple Explanation                                   | Pros                                                                  | Cons                                                               | Best Use-Case                                      |
 | -------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------- |
 | **Ziegler-Nichols**  | Moderate      | Fast         | Stable system, ability to induce critical oscillations.                                         | Uses critical oscillation to set PID parameters.     | Easy to implement, quick results, good starting point.                | Can lead to aggressive tuning, overshoot, unsuitable for delays.   | Oscillatory systems with consistent dynamics.      |
-| **Cohen-Coon**       | Moderate      | Moderate     | Accurate dead time, process gain, and time constant measurements.                               | Focuses on dead time and first-order system models.  | Handles dead time well, provides smoother responses.                  | Requires accurate measurements, limited to first-order systems.    | Dead-time-dominant systems.                        |
-| **IMC-Based Tuning** | High          | Moderate     | Precise process model, gain, time constant, dead time, and desired time constant.               | Uses process models to balance speed and stability.  | Robust, handles dead time, adjustable performance tuning.             | Requires precise modeling, complex setup.                          | Dead-time-dominant systems with stability needs.   |
+| **Cohen-Coon**       | Moderate      | Fast         | Stable system, ability to induce oscillations.                                               | Uses oscillation data for smoother PID tuning.       | Handles dead time well, provides smoother responses than Z-N.         | May be less aggressive than Z-N, requires oscillation test.          | Systems needing smoother response than Z-N.         |
+| **IMC-Based Tuning** | Moderate      | Moderate     | Process time constant, dead time, and desired robustness parameter.                           | Balances robustness and performance with λ parameter.| Highly robust, handles dead time, user-adjustable tuning.             | Requires process parameter estimation, moderate complexity.           | Dead-time systems needing robustness control.       |
 | **Tyreus-Luyben**    | Moderate      | Moderate     | Stable system, ability to measure ultimate gain and period.                                     | Minimizes overshoot and improves stability.          | Robust, minimal overshoot, suitable for stability-focused systems.    | No derivative action, requires accurate Ku and Tu measurements.    | Systems requiring minimal overshoot and stability. |
 | **Lambda Tuning**    | Moderate-High | Moderate     | Measurable dead time (\( L \)) and process time constant (\( T \)).                             | Balances response speed and robustness.              | Handles dead time effectively, adjustable for performance needs.      | Requires accurate \( T \) and \( L \) measurements.                | Systems with significant dead time.                |
 | **Manual Tuning**    | Low-High      | Variable     | Expertise in PID control, time for iterative adjustments, system tolerance for gradual changes. | Adjusts parameters manually through trial and error. | Fully customizable, works for unique dynamics, no assumptions needed. | Time-intensive, prone to errors, results depend on user expertise. | Unique or challenging system dynamics.             |

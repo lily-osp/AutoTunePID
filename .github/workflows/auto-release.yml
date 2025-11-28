@@ -1,0 +1,104 @@
+name: Auto Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: |
+        # Extract version from tag (remove 'v' prefix)
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+
+        # Get version from library.properties
+        LIB_VERSION=$(grep "^version=" library.properties | cut -d'=' -f2)
+        echo "lib_version=$LIB_VERSION" >> $GITHUB_OUTPUT
+
+        echo "Tag version: $TAG_VERSION"
+        echo "Library version: $LIB_VERSION"
+
+        # Verify they match
+        if [ "$TAG_VERSION" != "$LIB_VERSION" ]; then
+          echo "❌ Tag version ($TAG_VERSION) does not match library version ($LIB_VERSION)"
+          exit 1
+        fi
+
+    - name: Create Arduino Library ZIP
+      run: |
+        echo "📦 Creating Arduino Library ZIP..."
+
+        # Create a temporary directory for the Arduino library structure
+        mkdir arduino-lib
+
+        # Copy the necessary files for Arduino library
+        cp -r src arduino-lib/
+        cp library.properties arduino-lib/
+        cp keywords.txt arduino-lib/
+        cp LICENSE arduino-lib/
+        cp README.md arduino-lib/
+        cp -r examples arduino-lib/
+
+        # Create the ZIP file
+        cd arduino-lib
+        zip -r ../AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip .
+
+        echo "✅ ZIP created: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"
+
+        # List contents for verification
+        echo "📋 ZIP contents:"
+        unzip -l ../AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip | head -20
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release v${{ steps.get_version.outputs.tag_version }}
+        body: |
+          ## AutoTunePID Library v${{ steps.get_version.outputs.tag_version }}
+
+          ### 📦 Arduino Library Download
+          Download the ZIP file below and install it in your Arduino IDE using **Sketch > Include Library > Add .ZIP Library**.
+
+          ### 🔧 What's New
+          - See [CHANGELOG](CHANGELOG.md) for detailed changes
+          - Full release notes available in the library documentation
+
+          ### 📚 Documentation
+          - Complete documentation available in the `docs/` folder
+          - Examples included for all tuning methods
+
+          ### ✅ Compatibility
+          - Arduino IDE 1.5.x and later
+          - Arduino CLI compatible
+          - AVR, ESP32, and other Arduino-compatible boards
+        draft: false
+        prerelease: false
+
+    - name: Upload ZIP to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip
+        asset_name: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip
+        asset_content_type: application/zip
+
+    - name: Verify Release
+      run: |
+        echo "🎉 Release created successfully!"
+        echo "📋 Release URL: ${{ steps.create_release.outputs.html_url }}"
+        echo "📦 Asset uploaded: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"

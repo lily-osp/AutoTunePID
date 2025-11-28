@@ -118,6 +118,7 @@ void setup() {
     pressureController.enableInputFilter(0.1);  // Enable input filtering with alpha = 0.1
     pressureController.enableOutputFilter(0.1); // Enable output filtering with alpha = 0.1
     pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+    pressureController.setLambda(0.5); // Set lambda parameter for IMC tuning
     pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
     pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -196,6 +197,7 @@ void setup() {
     flowController.enableInputFilter(0.15);  // Enable input filtering with alpha = 0.15
     flowController.enableOutputFilter(0.15); // Enable output filtering with alpha = 0.15
     flowController.enableAntiWindup(true, 0.9); // Enable anti-windup with 90% threshold
+    flowController.setLambda(0.7); // Set lambda parameter for Lambda Tuning
     flowController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
     flowController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }

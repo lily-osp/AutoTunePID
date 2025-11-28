@@ -142,12 +142,15 @@ This example continuously updates the PID output based on the sensor reading.
 
 ## Retrieving PID Gains and Output
 
-Retrieve the computed or manually set PID gains and the current output value:
+Retrieve the computed or manually set PID gains, output, and configuration values:
 
 - `getKp()`, `getKi()`, `getKd()`: Access the proportional, integral, and derivative gains.
 - `getOutput()`: Access the controller's current output.
 - `getKu()`: Retrieve the ultimate gain (Ku) from auto-tuning.
 - `getTu()`: Retrieve the oscillation period (Tu) from auto-tuning.
+- `getSetpoint()`: Retrieve the current setpoint value.
+- `getOperationalMode()`: Retrieve the current operational mode.
+- `getLambda()`: Retrieve the lambda parameter value.
 
 ### Example
 
@@ -222,6 +225,21 @@ This sets the oscillation mode to **Half** and overrides the default steps to **
 
 ---
 
+## Lambda Parameter Configuration
+
+For **IMC** and **Lambda Tuning** methods, you can configure the **lambda parameter** that controls the trade-off between response speed and robustness. Use `setLambda()` to set this parameter.
+
+### Example
+
+```cpp
+pidController.setTuningMethod(TuningMethod::LambdaTuning);
+pidController.setLambda(0.5); // Set lambda parameter for Lambda Tuning
+```
+
+This sets the lambda parameter to **0.5**, which provides a balanced trade-off between speed and robustness.
+
+---
+
 ## Example Sketches
 
 ### 1. Ziegler-Nichols Example: Temperature Control
@@ -278,6 +296,7 @@ void setup() {
     pressureController.setSetpoint(100.0); // Target pressure
     pressureController.enableInputFilter(0.1); // Enable input filtering
     pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    pressureController.setLambda(0.5); // Set lambda parameter for robustness
     pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
     pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -322,6 +341,7 @@ void setup() {
     flowController.setSetpoint(50.0); // Target flow rate
     flowController.enableInputFilter(0.15); // Enable input filtering
     flowController.enableAntiWindup(true, 0.9); // Enable anti-windup
+    flowController.setLambda(0.7); // Set lambda parameter for flow control
     flowController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
     flowController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -350,8 +370,12 @@ void loop() {
 | `getOutput()`                         | Retrieves the computed PID output.                    |
 | `getKp()`, `getKi()`, `getKd()`       | Retrieves the PID gains.                              |
 | `getKu()`, `getTu()`                  | Retrieves the ultimate gain and oscillation period.   |
+| `getSetpoint()`                       | Retrieves the current setpoint value.                 |
+| `getOperationalMode()`                | Retrieves the current operational mode.               |
+| `getLambda()`                         | Retrieves the lambda parameter value.                 |
 | `setOperationalMode(OperationalMode)` | Sets the operational mode.                            |
 | `setOscillationMode(OscillationMode)` | Sets the oscillation mode for auto-tuning.            |
 | `setOscillationSteps(int steps)`      | Sets the number of oscillation steps for auto-tuning. |
+| `setLambda(float lambda)`             | Sets the lambda parameter for IMC and Lambda Tuning.  |
 
 ---

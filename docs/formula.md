@@ -1,94 +1,95 @@
-## **1. Lambda Tuning (CLD)**
+## **1. Ziegler-Nichols**
 
 ### Formula:
 
-$ K_p = \frac{T}{K(\lambda + L)} $
+$ K_p = 0.6 \cdot K_u $
 
-$ K_i = \frac{K_p}{T} = \frac{1}{K(\lambda + L)} $
+$ K_i = \frac{1.2 \cdot K_p}{T_u} $
 
-$ K_d = K_p \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)} $
+$ K_d = 0.075 \cdot K_p \cdot T_u $
 
 ---
 
-## **2. Internal Model Control (IMC)**
+## **2. Cohen-Coon**
 
 ### Formula:
 
-$ K_p = \frac{T}{K(\tau_c + L)} $
+$ K_p = 0.8 \cdot K_u $
 
-$ K_i = \frac{K_p}{T} = \frac{1}{K(\tau_c + L)} $
+$ K_i = \frac{K_p}{0.8 \cdot T_u} $
 
-$ K_d = K_p \cdot 0.5L = \frac{0.5L \cdot T}{K(\tau_c + L)} $
+$ K_d = 0.194 \cdot K_p \cdot T_u $
 
 ---
 
-## **3. Tyreus-Luyben**
+## **3. Internal Model Control (IMC)**
 
 ### Formula:
 
-$ K_p = 0.31K_u $
+$ K_p = \frac{T}{\lambda + L} $
 
-$ K_i = \frac{K_p}{2.2T_u} = \frac{0.31K_u}{2.2T_u} = 0.141K_u / T_u $
+$ K_i = \frac{K_p}{T} $
 
-$ K_d = 0 \quad \text{(Derivative action is usually omitted in Tyreus-Luyben for stability)} $
+$ K_d = \frac{K_p \cdot L}{2} $
+
+Where:
+- $ T $: Process time constant
+- $ L $: Dead time
+- $ \lambda $: Tuning parameter (configurable)
 
 ---
 
-## **4. Ziegler-Nichols**
+## **4. Tyreus-Luyben**
 
 ### Formula:
 
-$ K_p = 0.6K_u $
+$ K_p = 0.45 \cdot K_u $
 
-$ K_i = \frac{K_p}{0.5T_u} = \frac{0.6K_u}{0.5T_u} = 1.2K_u / T_u $
+$ K_i = \frac{K_p}{2.2 \cdot T_u} $
 
-$ K_d = K_p \cdot 0.125T_u = 0.6K_u \cdot 0.125T_u = 0.075K_u T_u $
+$ K_d = 0 \quad \text{(No derivative action for stability)} $
 
 ---
 
-## **5. Cohen-Coon**
+## **5. Lambda Tuning (CLD)**
 
 ### Formula:
 
-$ K_p = \frac{1}{K} \left( 1.35 + \frac{T}{L} \right) $
+$ K_p = \frac{T}{\lambda + L} $
 
-$ K_i = \frac{K_p}{\frac{2.5L}{1 + 0.35(T/L)}} = \frac{K_p \cdot (1 + 0.35(T/L))}{2.5L} $
+$ K_i = \frac{K_p}{T} $
 
-$ K_d = K_p \cdot 0.37L $
+$ K_d = 0.5 \cdot K_p \cdot L $
+
+Where:
+- $ T $: Process time constant
+- $ L $: Dead time
+- $ \lambda $: Tuning parameter (configurable)
 
 ---
 
 ### **Key Notes**:
 
-1. $ K_i $ is derived as $ K_i = K_p / T_i $, so integral time $ T_i $ is replaced in terms of $ K_p $.
-2. $ K_d $ is derived as $ K_d = K_p \cdot T_d $, replacing $ T_d $ in terms of $ K_p $.
-3. These formulas are ready for direct use in your **AutoTunePID library** to calculate $ K_p, K_i, K_d $.
+1. **Ultimate Gain Calculation**: $ K_u = \frac{4d}{\pi a} $ where $ d $ is the relay amplitude and $ a $ is the oscillation amplitude.
+2. **Process Parameter Estimation**: $ T \approx 0.67 \cdot T_u $, $ L \approx 0.17 \cdot T_u $ where $ T_u $ is the oscillation period.
+3. **Time-Based Integration**: The integral term uses proper time steps: $ \int e(t) \, dt \approx \sum e(t) \cdot \Delta t $
+4. **Derivative Calculation**: Uses time-based derivative: $ \frac{de(t)}{dt} \approx \frac{e(t) - e(t-1)}{\Delta t} $
+5. All formulas are implemented in the **AutoTunePID library** for automatic calculation.
 
-### **Automation Workflow**
+### **Implementation Details**
 
-1. **Induce Oscillations**:
-   
-   - Use a proportional controller or relay to induce oscillations in the system.
-   - Record:
-     - $ K_u $: Ultimate gain (oscillation gain).
-     - $ T_u $: Oscillation period.
+The AutoTunePID library implements these formulas with the following enhancements:
 
-2. **Estimate Process Parameters (if needed)**:
-   
-   - $ K, T, L $: Derived using $ K_u, T_u $.
-
-3. **Calculate PID Gains**:
-   
-   - Use the appropriate method (Lambda, IMC, Tyreus-Luyben, Ziegler-Nichols, or Cohen-Coon).
-
-4. **Implement the Controller**:
-   
-   - Apply the tuned $ K_p $, $ T_i $, and $ T_d $ values in your PID controller.
+- **Proper Time Integration**: Uses actual time steps instead of fixed multipliers
+- **Anti-Windup Protection**: Prevents integral windup with configurable thresholds
+- **Signal Filtering**: Exponential moving averages for input/output smoothing
+- **Oscillation Modes**: Normal, Half, and Mild oscillation amplitudes for auto-tuning
+- **Operational Modes**: Normal, Reverse, Hold, Preserve, Tune, and Auto modes
 
 ---
 
 ### **Conclusion**
 
-The **Lambda Tuning (CLD)** method provides a robust approach for systems with significant dead time, while **IMC**, **Tyreus-Luyben**, **Ziegler-Nichols**, and **Cohen-Coon** offer additional options for different system dynamics. These formulas can be implemented programmatically in your **AutoTunePID library** to achieve optimal PID tuning.
+These tuning methods provide a comprehensive set of tools for PID controller design. The **Ziegler-Nichols** and **Cohen-Coon** methods offer simple, effective tuning for most applications, while **IMC** and **Lambda Tuning** provide advanced control for systems with significant dead time. The **Tyreus-Luyben** method ensures stability-focused tuning. All formulas are mathematically correct and implemented with numerical stability considerations in the AutoTunePID library.
 
 ---

@@ -1,0 +1,56 @@
+# AutoTunePID Library Keywords
+# Syntax coloring for Arduino IDE
+
+# Classes
+AutoTunePID	KEYWORD1
+
+# Enums
+TuningMethod	KEYWORD2
+OperationalMode	KEYWORD2
+OscillationMode	KEYWORD2
+
+# Enum Values
+ZieglerNichols	KEYWORD2
+CohenCoon	KEYWORD2
+IMC	KEYWORD2
+TyreusLuyben	KEYWORD2
+LambdaTuning	KEYWORD2
+Manual	KEYWORD2
+Normal	KEYWORD2
+Reverse	KEYWORD2
+Hold	KEYWORD2
+Preserve	KEYWORD2
+Tune	KEYWORD2
+Auto	KEYWORD2
+Half	KEYWORD2
+Mild	KEYWORD2
+
+# Functions
+setSetpoint	KEYWORD2
+setTuningMethod	KEYWORD2
+setManualGains	KEYWORD2
+enableInputFilter	KEYWORD2
+enableOutputFilter	KEYWORD2
+enableAntiWindup	KEYWORD2
+setOperationalMode	KEYWORD2
+setOscillationMode	KEYWORD2
+setOscillationSteps	KEYWORD2
+setLambda	KEYWORD2
+update	KEYWORD2
+getOutput	KEYWORD2
+getKp	KEYWORD2
+getKi	KEYWORD2
+getKd	KEYWORD2
+getKu	KEYWORD2
+getTu	KEYWORD2
+getSetpoint	KEYWORD2
+getOperationalMode	KEYWORD2
+getLambda	KEYWORD2
+
+# Constants (backward compatibility)
+ZieglerNichols	LITERAL1
+CohenCoon	LITERAL1
+IMC	LITERAL1
+TyreusLuyben	LITERAL1
+LambdaTuning	LITERAL1
+Manual	LITERAL1

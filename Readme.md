@@ -341,6 +341,67 @@ void loop() {
 
 ---
 
+## Releases and Installation
+
+### Automated Releases
+
+This repository uses GitHub Actions to automatically create releases with Arduino library ZIP files:
+
+#### Automatic Release Creation
+- **Tag-based releases**: Push a version tag (e.g., `v1.2.3`) to automatically create a release
+- **Manual releases**: Use the "Manual Release Creation" workflow in GitHub Actions
+- **Release validation**: All releases are validated for proper Arduino library structure
+
+#### Release Assets
+Each release includes:
+- **`AutoTunePID-x.x.x.zip`**: Arduino library ZIP file for IDE installation
+- Complete library structure optimized for Arduino IDE Library Manager
+
+### Installation Methods
+
+#### Method 1: Arduino IDE (Recommended)
+1. Go to [Releases](https://github.com/lily-osp/AutoTunePID/releases)
+2. Download the latest `AutoTunePID-x.x.x.zip` file
+3. Open Arduino IDE
+4. Go to **Sketch > Include Library > Add .ZIP Library**
+5. Select the downloaded ZIP file
+6. Restart Arduino IDE
+
+#### Method 2: Manual Installation
+1. Download and extract the ZIP file
+2. Copy the `AutoTunePID` folder to your Arduino libraries directory:
+   - Windows: `Documents\Arduino\libraries\`
+   - macOS: `~/Documents/Arduino/libraries/`
+   - Linux: `~/Arduino/libraries/`
+3. Restart Arduino IDE
+
+#### Method 3: Arduino CLI
+```bash
+arduino-cli lib install --zip-path AutoTunePID-x.x.x.zip
+```
+
+### Development Workflow
+
+#### For Contributors
+1. **Validation**: All pushes are automatically validated for proper library structure
+2. **Testing**: Examples are compiled to ensure functionality
+3. **Releases**: Use GitHub Actions workflows for consistent releases
+
+#### Creating a New Release
+1. Update `version` in `library.properties`
+2. Commit the change
+3. Create and push a version tag: `git tag v1.2.3 && git push origin v1.2.3`
+4. GitHub Actions will automatically create the release with ZIP file
+
+#### Local Testing
+Before releasing, test the ZIP creation locally:
+```bash
+./create_release_zip.sh
+```
+This creates the same ZIP structure that GitHub Actions will generate.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Please follow these steps:

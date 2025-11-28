@@ -1,0 +1,58 @@
+name: Create Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from library.properties
+      id: get_version
+      run: |
+        VERSION=$(grep "^version=" library.properties | cut -d'=' -f2)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Library version: $VERSION"
+
+    - name: Create Arduino Library ZIP
+      run: |
+        # Create a temporary directory for the Arduino library structure
+        mkdir arduino-lib
+
+        # Copy the necessary files for Arduino library
+        cp -r src arduino-lib/
+        cp library.properties arduino-lib/
+        cp keywords.txt arduino-lib/
+        cp LICENSE arduino-lib/
+        cp README.md arduino-lib/
+        cp -r examples arduino-lib/
+
+        # Create the ZIP file
+        cd arduino-lib
+        zip -r ../AutoTunePID-${{ steps.get_version.outputs.version }}.zip .
+
+        # List contents for verification
+        echo "ZIP contents:"
+        unzip -l ../AutoTunePID-${{ steps.get_version.outputs.version }}.zip
+
+    - name: Upload ZIP to Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./AutoTunePID-${{ steps.get_version.outputs.version }}.zip
+        asset_name: AutoTunePID-${{ steps.get_version.outputs.version }}.zip
+        asset_content_type: application/zip
+
+    - name: Verify ZIP Structure
+      run: |
+        echo "Verifying Arduino Library ZIP structure..."
+        unzip -l AutoTunePID-${{ steps.get_version.outputs.version }}.zip | grep -E "(src/|library.properties|keywords.txt|LICENSE|README.md|examples/)" || echo "Some expected files missing"
+
+        echo "ZIP structure verification complete."

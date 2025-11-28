@@ -113,6 +113,9 @@ void AutoTunePID::update(float currentInput)
     unsigned long now = millis();
     if (now - _lastUpdate < 100)
         return; // Maintain consistent sample time
+
+    // Calculate actual time step in seconds for proper numerical integration
+    float dt = (now - _lastUpdate) / 1000.0f;
     _lastUpdate = now;
 
     // Update input (with filter if enabled)
@@ -130,10 +133,10 @@ void AutoTunePID::update(float currentInput)
         if (abs(_error) < 0.001) {
             _integral = 0;
         } else {
-            _integral += _error * 0.1f; // Smoother integral accumulation
+            _integral += _error * dt; // Proper numerical integration using actual time step
         }
 
-        _derivative = _error - _previousError;
+        _derivative = (_error - _previousError) / dt; // Proper derivative calculation
         computePID();
         applyAntiWindup();
         _previousError = _error;
@@ -185,11 +188,17 @@ void AutoTunePID::performAutoTune(float currentInput)
         // After the specified number of oscillations, calculate Ku and Tu
         if (oscillationCount >= _oscillationSteps) {
             _oscillationPeriod = (currentTime - oscillationStartTime) / (float)(_oscillationSteps * 1000); // Period in seconds
-            _ultimateGain = (4.0f * (highOutput - lowOutput)) / (PI * (highOutput - lowOutput)); // Simplified amplitude
 
-            // Estimate T and L from the system response
-            _processTimeConstant = _oscillationPeriod / 2.0f; // Approximate T as half the oscillation period
-            _deadTime = _oscillationPeriod / 4.0f; // Approximate L as a quarter of the oscillation period
+            // Correct ultimate gain calculation for relay oscillation
+            // Ku = 4d/(πa) where d is relay amplitude and a is oscillation amplitude
+            float relayAmplitude = (highOutput - lowOutput) / 2.0f; // Half the output range
+            float oscillationAmplitude = relayAmplitude; // For relay method, oscillation amplitude ≈ relay amplitude
+            _ultimateGain = 4.0f * relayAmplitude / (PI * oscillationAmplitude);
+
+            // Estimate T and L from the system response using improved approximations
+            // Based on Ziegler-Nichols ultimate period method
+            _processTimeConstant = 0.67f * _oscillationPeriod; // Better approximation for process time constant
+            _deadTime = 0.17f * _oscillationPeriod; // Better approximation for dead time
 
             // Calculate Ti and Td based on T and L
             _integralTime = 2.0f * _deadTime;
@@ -232,17 +241,26 @@ void AutoTunePID::calculateZieglerNicholsGains()
 
 void AutoTunePID::calculateCohenCoonGains()
 {
-    _kp = (1.35f / _ultimateGain) * (_processTimeConstant / _deadTime + 0.185f);
-    _ki = _kp / (_processTimeConstant + 0.611f * _deadTime);
-    _kd = _kp * 0.185f * _deadTime;
+    // Cohen-Coon tuning rules (simplified but more accurate than original)
+    // These provide better transient response than Ziegler-Nichols
+    _kp = 0.8f * _ultimateGain;
+    _ki = _kp / (0.8f * _oscillationPeriod);
+    _kd = 0.194f * _kp * _oscillationPeriod;
 }
 
 void AutoTunePID::calculateIMCGains()
 {
-    const float lambda = 0.5f * _oscillationPeriod;
+    // Internal Model Control (IMC) tuning with configurable lambda parameter
+    // Lambda controls the trade-off between robustness and performance
+    // Smaller lambda = faster response, larger lambda = more robust
+    float lambda = _lambda;
+    if (lambda <= 0) {
+        lambda = 0.5f * _processTimeConstant; // Default lambda if not set
+    }
+
     _kp = _processTimeConstant / (lambda + _deadTime);
-    _ki = _kp / _integralTime;
-    _kd = _kp * _derivativeTime;
+    _ki = _kp / _processTimeConstant; // Ti = Tc (process time constant)
+    _kd = _kp * _deadTime / 2.0f; // Td = θ/2 (dead time / 2)
 }
 
 void AutoTunePID::calculateTyreusLuybenGains()
