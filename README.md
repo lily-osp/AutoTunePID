@@ -333,10 +333,17 @@ void loop() {
 ## Detailed Explanation
 
 - For more details about the algorithms used in the library, read [here](docs/explanation.md).
-- For more details about the library usage, read [here](docs/usage.md).
-- For more details about manual tuning, read [here](docs/manual.md).
-- For a comprehensive system architecture overview, read [here](docs/system_architecture.md).
-- And For those who seek the Flowchart and the state diagram of the library u can see here:
+- **Getting Started**: New to PID control? Start [here](docs/getting_started.md)
+- **API Reference**: Complete method reference with examples [here](docs/api_reference.md)
+- **Usage Guide**: Detailed usage instructions [here](docs/usage.md)
+- **Integration Guide**: Connect with sensors/actuators/libraries [here](docs/integration_guide.md)
+- **Best Practices**: Optimization and design guidelines [here](docs/best_practices.md)
+- **Troubleshooting**: Common issues and solutions [here](docs/troubleshooting.md)
+- **Manual Tuning**: Step-by-step tuning procedures [here](docs/manual.md)
+- **System Architecture**: Internal design overview [here](docs/system_architecture.md)
+- **Algorithm Details**: Mathematical formulas and explanations [here](docs/formula.md)
+- **Code Examples**: Practical implementations [here](docs/examples.md)
+- **Visual Diagrams**:
   - [Flowchart](docs/flowchart.mermaid)
   - [State diagram](docs/state-diagram.mermaid)
 
