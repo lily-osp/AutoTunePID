@@ -40,15 +40,7 @@ cp -r src "$TEMP_DIR/"
 cp library.properties "$TEMP_DIR/"
 cp keywords.txt "$TEMP_DIR/"
 cp LICENSE "$TEMP_DIR/"
-
-# Handle README file (might be Readme.md or README.md)
-if [ -f "README.md" ]; then
-    cp README.md "$TEMP_DIR/"
-elif [ -f "Readme.md" ]; then
-    cp Readme.md "$TEMP_DIR/README.md"
-else
-    echo "⚠️  Warning: No README file found"
-fi
+cp README.md "$TEMP_DIR/"
 
 # Examples
 if [ -d "examples" ]; then
