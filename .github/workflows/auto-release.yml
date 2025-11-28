@@ -29,13 +29,13 @@ jobs:
 
         # Verify they match
         if [ "$TAG_VERSION" != "$LIB_VERSION" ]; then
-          echo "❌ Tag version ($TAG_VERSION) does not match library version ($LIB_VERSION)"
+          echo "ERROR: Tag version ($TAG_VERSION) does not match library version ($LIB_VERSION)"
           exit 1
         fi
 
     - name: Create Arduino Library ZIP
       run: |
-        echo "📦 Creating Arduino Library ZIP..."
+        echo "Creating Arduino Library ZIP..."
 
         # Create a temporary directory for the Arduino library structure
         mkdir arduino-lib
@@ -52,10 +52,10 @@ jobs:
         cd arduino-lib
         zip -r ../AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip .
 
-        echo "✅ ZIP created: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"
+        echo "ZIP created: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"
 
         # List contents for verification
-        echo "📋 ZIP contents:"
+        echo "ZIP contents:"
         unzip -l ../AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip | head -20
 
     - name: Create GitHub Release
@@ -69,18 +69,18 @@ jobs:
         body: |
           ## AutoTunePID Library v${{ steps.get_version.outputs.tag_version }}
 
-          ### 📦 Arduino Library Download
+          ### Installation
           Download the ZIP file below and install it in your Arduino IDE using **Sketch > Include Library > Add .ZIP Library**.
 
-          ### 🔧 What's New
+          ### Release Notes
           - See [CHANGELOG](CHANGELOG.md) for detailed changes
           - Full release notes available in the library documentation
 
-          ### 📚 Documentation
+          ### Documentation
           - Complete documentation available in the `docs/` folder
           - Examples included for all tuning methods
 
-          ### ✅ Compatibility
+          ### Compatibility
           - Arduino IDE 1.5.x and later
           - Arduino CLI compatible
           - AVR, ESP32, and other Arduino-compatible boards
@@ -99,6 +99,6 @@ jobs:
 
     - name: Verify Release
       run: |
-        echo "🎉 Release created successfully!"
-        echo "📋 Release URL: ${{ steps.create_release.outputs.html_url }}"
-        echo "📦 Asset uploaded: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"
+        echo "Release created successfully!"
+        echo "Release URL: ${{ steps.create_release.outputs.html_url }}"
+        echo "Asset uploaded: AutoTunePID-${{ steps.get_version.outputs.tag_version }}.zip"

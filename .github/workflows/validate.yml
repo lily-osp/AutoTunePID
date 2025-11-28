@@ -16,88 +16,88 @@ jobs:
 
     - name: Validate Arduino Library Structure
       run: |
-        echo "🔍 Validating Arduino Library Structure..."
+        echo "Validating Arduino Library Structure..."
 
         # Check for required files
         REQUIRED_FILES=("src/AutoTunePID.h" "src/AutoTunePID.cpp" "library.properties" "keywords.txt" "LICENSE" "README.md")
         for file in "${REQUIRED_FILES[@]}"; do
           if [ ! -f "$file" ]; then
-            echo "❌ Missing required file: $file"
+            echo "ERROR: Missing required file: $file"
             exit 1
           else
-            echo "✅ Found: $file"
+            echo "OK: Found $file"
           fi
         done
 
         # Check for examples directory
         if [ ! -d "examples" ]; then
-          echo "❌ Missing examples directory"
+          echo "ERROR: Missing examples directory"
           exit 1
         else
-          echo "✅ Found examples directory"
+          echo "OK: Found examples directory"
         fi
 
         # Validate library.properties format
-        echo "🔍 Validating library.properties..."
+        echo "Validating library.properties..."
         if ! grep -q "^name=" library.properties; then
-          echo "❌ library.properties missing 'name' field"
+          echo "ERROR: library.properties missing 'name' field"
           exit 1
         fi
 
         if ! grep -q "^version=" library.properties; then
-          echo "❌ library.properties missing 'version' field"
+          echo "ERROR: library.properties missing 'version' field"
           exit 1
         fi
 
         if ! grep -q "^author=" library.properties; then
-          echo "❌ library.properties missing 'author' field"
+          echo "ERROR: library.properties missing 'author' field"
           exit 1
         fi
 
         if ! grep -q "^maintainer=" library.properties; then
-          echo "❌ library.properties missing 'maintainer' field"
+          echo "ERROR: library.properties missing 'maintainer' field"
           exit 1
         fi
 
-        echo "✅ library.properties validation passed"
+        echo "OK: library.properties validation passed"
 
         # Check keywords.txt format
-        echo "🔍 Validating keywords.txt..."
+        echo "Validating keywords.txt..."
         if [ ! -s "keywords.txt" ]; then
-          echo "❌ keywords.txt is empty"
+          echo "ERROR: keywords.txt is empty"
           exit 1
         fi
 
         # Check for tabs in keywords.txt (Arduino IDE requirement)
         if grep -q " " keywords.txt && ! grep -q $'\t' keywords.txt; then
-          echo "❌ keywords.txt should use tabs, not spaces"
+          echo "ERROR: keywords.txt should use tabs, not spaces"
           exit 1
         fi
 
-        echo "✅ keywords.txt validation passed"
+        echo "OK: keywords.txt validation passed"
 
         # Validate version format (semantic versioning)
         VERSION=$(grep "^version=" library.properties | cut -d'=' -f2)
         if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
-          echo "❌ Version '$VERSION' does not follow semantic versioning (e.g., 1.2.3)"
+          echo "ERROR: Version '$VERSION' does not follow semantic versioning (e.g., 1.2.3)"
           exit 1
         fi
 
-        echo "✅ Version format validation passed: $VERSION"
+        echo "OK: Version format validation passed: $VERSION"
 
         # Check for emoji-free documentation
-        echo "🔍 Checking for professional documentation..."
+        echo "Checking for professional documentation..."
         if grep -r "😀\|😂\|😊\|👍\|🔥\|✨\|🚀\|💡\|📚\|🎯\|✅\|❌\|🔍\|🔧\|📋\|🎯\|📊\|🎯\|🚀" docs/ 2>/dev/null; then
-          echo "⚠️  Warning: Emojis found in documentation (consider removing for professional appearance)"
+          echo "WARNING: Emojis found in documentation (consider removing for professional appearance)"
         else
-          echo "✅ Documentation is emoji-free"
+          echo "OK: Documentation is emoji-free"
         fi
 
-        echo "🎉 All validations passed!"
+        echo "All validations passed!"
 
     - name: Test Library Compilation
       run: |
-        echo "🔧 Testing Arduino Library Compilation..."
+        echo "Testing Arduino Library Compilation..."
 
         # Install Arduino CLI
         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
@@ -113,16 +113,16 @@ jobs:
             echo "Testing $(basename $example_dir)..."
             if ! arduino-cli compile --libraries . --fqbn arduino:avr:uno "$example_dir/$(basename $example_dir).ino" >/dev/null 2>&1; then
               FAILED_EXAMPLES+=("$(basename $example_dir)")
-              echo "❌ $(basename $example_dir) failed to compile"
+              echo "ERROR: $(basename $example_dir) failed to compile"
             else
-              echo "✅ $(basename $example_dir) compiled successfully"
+              echo "OK: $(basename $example_dir) compiled successfully"
             fi
           fi
         done
 
         if [ ${#FAILED_EXAMPLES[@]} -gt 0 ]; then
-          echo "❌ Compilation failed for: ${FAILED_EXAMPLES[*]}"
+          echo "ERROR: Compilation failed for: ${FAILED_EXAMPLES[*]}"
           exit 1
         fi
 
-        echo "🎉 All examples compiled successfully!"
+        echo "All examples compiled successfully!"

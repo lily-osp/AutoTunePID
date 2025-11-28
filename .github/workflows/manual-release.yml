@@ -24,11 +24,11 @@ jobs:
     - name: Validate version format
       run: |
         if ! echo "${{ inputs.version }}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
-          echo "❌ Invalid version format: ${{ inputs.version }}"
+          echo "ERROR: Invalid version format: ${{ inputs.version }}"
           echo "Expected format: 1.2.3 or 1.2.3-rc.1"
           exit 1
         fi
-        echo "✅ Version format valid: ${{ inputs.version }}"
+        echo "OK: Version format valid: ${{ inputs.version }}"
 
     - name: Update library.properties version
       run: |
@@ -76,18 +76,18 @@ jobs:
           ### 📦 Arduino Library Download
           Download the ZIP file below and install it in your Arduino IDE using **Sketch > Include Library > Add .ZIP Library**.
 
-          ### 🔧 Installation
+          ### Installation
           1. Download `AutoTunePID-${{ inputs.version }}.zip`
           2. Open Arduino IDE
           3. Go to **Sketch > Include Library > Add .ZIP Library**
           4. Select the downloaded ZIP file
           5. Restart Arduino IDE
 
-          ### 📚 Documentation
+          ### Documentation
           - Complete documentation available in the `docs/` folder
           - Examples included for all tuning methods
 
-          ### ✅ Compatibility
+          ### Compatibility
           - Arduino IDE 1.5.x and later
           - Arduino CLI compatible
           - AVR, ESP32, and other Arduino-compatible boards
@@ -106,7 +106,7 @@ jobs:
 
     - name: Success Message
       run: |
-        echo "🎉 Manual release created successfully!"
-        echo "📋 Release URL: ${{ steps.create_release.outputs.html_url }}"
-        echo "🏷️  Tag: v${{ inputs.version }}"
-        echo "📦 Asset: AutoTunePID-${{ inputs.version }}.zip"
+        echo "Manual release created successfully!"
+        echo "Release URL: ${{ steps.create_release.outputs.html_url }}"
+        echo "Tag: v${{ inputs.version }}"
+        echo "Asset: AutoTunePID-${{ inputs.version }}.zip"
