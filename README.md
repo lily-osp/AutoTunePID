@@ -163,68 +163,38 @@ The library implements five distinct auto-tuning algorithms:
    
    - Oscillates the system to determine Ku and Tu based on output extremes.
    - Calculates PID gains:
-     - $$
-       K_p = 0.6 \cdot K_u
-       $$
-     - $$
-       K_i = \frac{1.2 \cdot K_p}{T_u}
-       $$
-     - $$
-       K_d = 0.075 \cdot K_p \cdot T_u
-       $$
+     - $ K_p = 0.6 \cdot Ku $
+     - $ K_i = \frac{1.2 \cdot K_p}{Tu} $
+     - $ K_d = 0.075 \cdot K_p \cdot Tu $
 
 2. **Cohen-Coon**:
    
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
-     - $$
-       K_p = 0.8 \cdot K_u
-       $$
-     - $$
-       K_i = \frac{K_p}{0.8 \cdot T_u}
-       $$
-     - $$
-       K_d = 0.194 \cdot K_p \cdot T_u
-       $$
+     - $ K_p = 0.8 \cdot Ku $
+     - $ K_i = \frac{K_p}{0.8 \cdot Tu} $
+     - $ K_d = 0.194 \cdot K_p \cdot Tu $
 
 3. **IMC (Internal Model Control)**:
    
    - Incorporates a smoothing factor ('λ') to adjust response speed:
-     - $$
-       K_p = 0.4 \cdot K_u
-       $$
-     - $$
-       K_i = \frac{K_p}{2 \cdot \lambda}
-       $$
-     - $$
-       K_d = 0.5 \cdot K_p \cdot \lambda
-       $$
+     - $ K_p = 0.4 \cdot Ku $
+     - $ K_i = \frac{K_p}{2 \cdot \lambda} $
+     - $ K_d = 0.5 \cdot K_p \cdot \lambda $
 
 4. **Tyreus-Luyben**:
    
    - Provides robust tuning with minimal overshoot:
-     - $$
-       K_p = 0.45 \cdot K_u
-       $$
-     - $$
-       K_i = \frac{K_p}{2.2 \cdot T_u}
-       $$
-     - $$
-       K_d = 0.0
-       $$ (No derivative term)
+     - $ K_p = 0.45 \cdot Ku $
+     - $ K_i = \frac{K_p}{2.2 \cdot Tu} $
+     - $ K_d = 0.0 $ (No derivative term)
 
 5. **Lambda Tuning (CLD)**:
    
    - Optimizes systems with significant dead time:
-     - $$
-       K_p = \frac{T}{K(\lambda + L)}
-       $$
-     - $$
-       K_i = \frac{K_p}{T} = \frac{1}{K(\lambda + L)}
-       $$
-     - $$
-       K_d = K_p \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)}
-       $$
+     - $ K_p = \frac{T}{K(\lambda + L)} $
+     - $ K_i = \frac{K_p}{T} = \frac{1}{K(\lambda + L)} $
+     - $ K_d = K_p \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)} $
 
 ---
 
@@ -232,10 +202,8 @@ The library implements five distinct auto-tuning algorithms:
 
 Filters smooth inputs and outputs using an exponential moving average:
 
-- $$
-  \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue})
-  $$
-- $$ \alpha $$: Responsiveness of the filter (range: 0.01–1.0).
+- $\text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue})$
+- $ \alpha $: Responsiveness of the filter (range: 0.01–1.0).
 
 ---
 
