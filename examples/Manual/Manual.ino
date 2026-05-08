@@ -38,7 +38,43 @@ void loop()
     Serial.print(" | Ki: ");
     Serial.print(pid.getKi());
     Serial.print(" | Kd: ");
-    Serial.println(pid.getKd());
+    Serial.print(pid.getKd());
+    Serial.print(" | Mode: ");
+
+    // Print the current operational mode
+    switch (pid.getOperationalMode()) {
+    case OperationalMode::Normal:
+        Serial.print("Normal");
+        break;
+    case OperationalMode::Reverse:
+        Serial.print("Reverse");
+        break;
+    case OperationalMode::Manual:
+        Serial.print("Manual");
+        break;
+    case OperationalMode::Override:
+        Serial.print("Override");
+        break;
+    case OperationalMode::Track:
+        Serial.print("Track");
+        break;
+    case OperationalMode::Hold:
+        Serial.print("Hold");
+        break;
+    case OperationalMode::Preserve:
+        Serial.print("Preserve");
+        break;
+    case OperationalMode::Tune:
+        Serial.print("Tune");
+        break;
+    case OperationalMode::Auto:
+        Serial.print("Auto");
+        break;
+    default:
+        Serial.print("Other");
+        break;
+    }
+    Serial.println();
 
     delay(100);
 }

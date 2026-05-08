@@ -61,6 +61,7 @@ void loop() {
         case OperationalMode::Preserve: Serial.print("Preserve"); break;
         case OperationalMode::Tune: Serial.print("Tune"); break;
         case OperationalMode::Auto: Serial.print("Auto"); break;
+        default: Serial.print("Other"); break;
     }
 
     Serial.println();

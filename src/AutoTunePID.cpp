@@ -225,7 +225,7 @@ void AutoTunePID::update(float currentInput)
 }
 
 /** @brief Internal auto-tune relay logic. */
-void AutoTunePID::performAutoTune(float currentInput)
+void AutoTunePID::performAutoTune(float /*currentInput*/)
 {
     static uint32_t lastToggleTime = 0U;
     static bool outputState = true;

@@ -52,7 +52,41 @@ void loop()
     Serial.print(output);
     Serial.print(" | Error: ");
     Serial.print(pid.getSetpoint() - currentTemp); // Show normal error for reference
-    Serial.print(" | Mode: Reverse");
+    Serial.print(" | Mode: ");
+
+    // Print the current operational mode
+    switch (pid.getOperationalMode()) {
+    case OperationalMode::Normal:
+        Serial.print("Normal");
+        break;
+    case OperationalMode::Reverse:
+        Serial.print("Reverse");
+        break;
+    case OperationalMode::Manual:
+        Serial.print("Manual");
+        break;
+    case OperationalMode::Override:
+        Serial.print("Override");
+        break;
+    case OperationalMode::Track:
+        Serial.print("Track");
+        break;
+    case OperationalMode::Hold:
+        Serial.print("Hold");
+        break;
+    case OperationalMode::Preserve:
+        Serial.print("Preserve");
+        break;
+    case OperationalMode::Tune:
+        Serial.print("Tune");
+        break;
+    case OperationalMode::Auto:
+        Serial.print("Auto");
+        break;
+    default:
+        Serial.print("Other");
+        break;
+    }
 
     // Determine cooling status
     if (output > 10.0f) { // Small threshold to avoid noise

@@ -61,6 +61,15 @@ void loop()
     case OperationalMode::Reverse:
         Serial.print("Reverse");
         break;
+    case OperationalMode::Manual:
+        Serial.print("Manual");
+        break;
+    case OperationalMode::Override:
+        Serial.print("Override");
+        break;
+    case OperationalMode::Track:
+        Serial.print("Track");
+        break;
     case OperationalMode::Hold:
         Serial.print("Hold");
         break;
@@ -72,6 +81,9 @@ void loop()
         break;
     case OperationalMode::Auto:
         Serial.print("Auto");
+        break;
+    default:
+        Serial.print("Other");
         break;
     }
     Serial.println();
