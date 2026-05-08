@@ -2,9 +2,12 @@
 #define AUTOTUNEPID_H
 
 #include <Arduino.h>
+#include <stdint.h>
+
+namespace atp {
 
 // Enumeration for different tuning methods
-enum class TuningMethod {
+enum class TuningMethod : uint8_t {
     ZieglerNichols, // Ziegler-Nichols tuning method
     CohenCoon, // Cohen-Coon tuning method
     IMC, // Internal Model Control tuning method
@@ -22,7 +25,7 @@ constexpr auto LambdaTuning = TuningMethod::LambdaTuning;
 constexpr auto Manual = TuningMethod::Manual;
 
 // Enumeration for operational modes
-enum class OperationalMode {
+enum class OperationalMode : uint8_t {
     Normal, // Normal PID operation
     Reverse, // Reverse PID operation (e.g., for cooling systems)
     Manual, // Manual mode: direct output control, bypass PID calculations
@@ -35,7 +38,7 @@ enum class OperationalMode {
 };
 
 // Enumeration for oscillation modes
-enum class OscillationMode {
+enum class OscillationMode : uint8_t {
     Normal, // Full oscillation (MaxOutput - MinOutput)
     Half, // Half oscillation (1/2 MaxOutput - 1/2 MinOutput)
     Mild // Mild oscillation (1/4 MaxOutput - 1/4 MinOutput)
@@ -44,7 +47,7 @@ enum class OscillationMode {
 class AutoTunePID {
 public:
     // Constructor to initialize the PID controller with min/max output and tuning method
-    AutoTunePID(float minOutput, float maxOutput, TuningMethod method = TuningMethod::ZieglerNichols);
+    explicit AutoTunePID(float minOutput, float maxOutput, TuningMethod method = TuningMethod::ZieglerNichols);
 
     // Configuration methods
     void setSetpoint(float setpoint); // Set the desired setpoint
@@ -58,7 +61,7 @@ public:
     void setOverrideOutput(float output); // Set override output value
     void setTrackReference(float reference); // Set track reference signal
     void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
-    void setOscillationSteps(int steps); // Set the number of oscillation steps for auto-tuning
+    void setOscillationSteps(int32_t steps); // Set the number of oscillation steps for auto-tuning
     void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
 
     // Runtime methods
@@ -93,7 +96,7 @@ private:
     TuningMethod _method; // Current tuning method
     OperationalMode _operationalMode; // Current operational mode
     OscillationMode _oscillationMode; // Current oscillation mode for auto-tuning
-    int _oscillationSteps; // Number of oscillation steps for auto-tuning
+    int32_t _oscillationSteps; // Number of oscillation steps for auto-tuning
     float _setpoint; // Desired setpoint
     float _lambda; // Lambda parameter for Lambda Tuning (CLD)
 
@@ -114,7 +117,7 @@ private:
     float _integralWindupThreshold; // Threshold for integral windup
 
     // Autotuning parameters
-    unsigned long _lastUpdate; // Timestamp of the last update
+    uint32_t _lastUpdate; // Timestamp of the last update
     float _ultimateGain; // Ultimate gain (Ku)
     float _oscillationPeriod; // Oscillation period (Tu)
 
@@ -131,6 +134,11 @@ private:
     float _outputFilteredValue; // Filtered output value
     float _inputFilterAlpha; // Alpha value for input filtering
     float _outputFilterAlpha; // Alpha value for output filtering
+
+    // Constants
+    static constexpr float kPi = 3.14159265f;
 };
+
+} // namespace atp
 
 #endif

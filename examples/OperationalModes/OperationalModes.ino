@@ -1,11 +1,14 @@
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
+
+// Use the atp namespace
+using namespace atp;
 
 // Pin definitions
 const int sensorPin = A0;    // Analog input for process variable
 const int outputPin = 9;     // PWM output for control signal
 
 // PID controller instance
-AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols);
 
 void setup() {
     Serial.begin(9600);
@@ -13,8 +16,8 @@ void setup() {
     pinMode(outputPin, OUTPUT);
 
     // Configure PID for normal operation
-    pid.setSetpoint(50.0); // Target value of 50 (analog units)
-    pid.setManualGains(2.0, 0.5, 0.1); // Sample PID gains
+    pid.setSetpoint(50.0f); // Target value of 50 (analog units)
+    pid.setManualGains(2.0f, 0.5f, 0.1f); // Sample PID gains
 
     Serial.println("Operational Modes Demonstration");
     Serial.println("Commands:");
@@ -29,14 +32,14 @@ void setup() {
 
 void loop() {
     // Read process variable (0-1023 range)
-    float processVariable = analogRead(sensorPin) * (100.0 / 1023.0);
+    float processVariable = static_cast<float>(analogRead(sensorPin)) * (100.0f / 1023.0f);
 
     // Update PID controller
     pid.update(processVariable);
 
     // Get output and apply to control pin
     float output = pid.getOutput();
-    analogWrite(outputPin, output);
+    analogWrite(outputPin, static_cast<int>(output));
 
     // Display current status
     Serial.print("PV: ");
@@ -79,13 +82,13 @@ void loop() {
 
             case 'm':
                 pid.setOperationalMode(OperationalMode::Manual);
-                pid.setManualOutput(50.0); // 50% output
+                pid.setManualOutput(50.0f); // 50% output
                 Serial.println("Switched to Manual mode (50% output)");
                 break;
 
             case 'o':
                 pid.setOperationalMode(OperationalMode::Override);
-                pid.setOverrideOutput(255.0); // Maximum output
+                pid.setOverrideOutput(255.0f); // Maximum output
                 Serial.println("Switched to Override mode (max output)");
                 break;
 
@@ -93,7 +96,7 @@ void loop() {
                 pid.setOperationalMode(OperationalMode::Track);
                 Serial.println("Switched to Track mode - ramping reference");
                 // Start track mode demonstration
-                for(float ref = 0; ref <= 255; ref += 25.5) {
+                for(float ref = 0.0f; ref <= 255.0f; ref += 25.5f) {
                     pid.setTrackReference(ref);
                     delay(500);
                 }

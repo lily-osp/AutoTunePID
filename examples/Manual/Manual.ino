@@ -1,12 +1,15 @@
 #include <AutoTunePID.h>
 
+// Use the atp namespace
+using namespace atp;
+
 // Pin definitions
 const int inputPin = A0;
 const int outputPin = 9;
 
 // PID parameters
-float setpoint = 100.0;
-AutoTunePID pid(0, 255, TuningMethod::Manual);
+float setpoint = 100.0f;
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::Manual);
 
 void setup()
 {
@@ -15,16 +18,16 @@ void setup()
     pinMode(outputPin, OUTPUT);
 
     pid.setSetpoint(setpoint);
-    pid.setManualGains(2.0, 0.5, 1.0); // Set manual gains (Kp, Ki, Kd)
+    pid.setManualGains(2.0f, 0.5f, 1.0f); // Set manual gains (Kp, Ki, Kd)
 }
 
 void loop()
 {
-    float currentInput = analogRead(inputPin);
+    float currentInput = static_cast<float>(analogRead(inputPin));
     pid.update(currentInput);
 
     float output = pid.getOutput();
-    analogWrite(outputPin, output);
+    analogWrite(outputPin, static_cast<int>(output));
 
     Serial.print("Input: ");
     Serial.print(currentInput);

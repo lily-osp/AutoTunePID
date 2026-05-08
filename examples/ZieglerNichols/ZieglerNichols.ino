@@ -1,12 +1,15 @@
 #include <AutoTunePID.h>
 
+// Use the atp namespace
+using namespace atp;
+
 // Pin definitions
 const int inputPin = A0; // Analog input pin for reading the sensor value
 const int outputPin = 9; // PWM output pin for controlling the actuator
 
 // PID parameters
-float setpoint = 100.0; // Desired setpoint
-AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols); // Create PID controller with minOutput=0, maxOutput=255, and Ziegler-Nichols tuning method
+float setpoint = 100.0f; // Desired setpoint
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols); // Create PID controller with minOutput=0, maxOutput=255, and Ziegler-Nichols tuning method
 
 void setup()
 {
@@ -26,7 +29,7 @@ void setup()
 void loop()
 {
     // Read the current input from the sensor
-    float currentInput = analogRead(inputPin);
+    float currentInput = static_cast<float>(analogRead(inputPin));
 
     // Update the PID controller with the current input
     pid.update(currentInput);
@@ -35,7 +38,7 @@ void loop()
     float output = pid.getOutput();
 
     // Apply the output to the actuator (e.g., PWM signal to a motor or heater)
-    analogWrite(outputPin, output);
+    analogWrite(outputPin, static_cast<int>(output));
 
     // Print debugging information to the serial monitor
     Serial.print("Input: ");

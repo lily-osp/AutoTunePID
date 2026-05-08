@@ -1,12 +1,15 @@
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
+
+// Use the atp namespace
+using namespace atp;
 
 // Pin definitions
 const int tempSensorPin = A0; // Analog input pin for temperature sensor
 const int peltierPin = 9;     // PWM output pin for Peltier cell control
 
 // PID parameters
-float setpoint = 12.0; // Desired temperature in °C
-AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols); // Create PID controller
+float setpoint = 12.0f; // Desired temperature in °C
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols); // Create PID controller
 
 void setup()
 {
@@ -16,8 +19,8 @@ void setup()
 
     // Configure PID controller for cooling system
     pid.setSetpoint(setpoint); // Set target temperature to 12°C
-    pid.enableInputFilter(0.1);  // Enable input filtering for stable readings
-    pid.enableAntiWindup(true, 0.8); // Enable anti-windup protection
+    pid.enableInputFilter(0.1f);  // Enable input filtering for stable readings
+    pid.enableAntiWindup(true, 0.8f); // Enable anti-windup protection
     pid.setOperationalMode(OperationalMode::Reverse); // Use Reverse mode for cooling
 
     Serial.println("Peltier Cooling System Initialized");
@@ -29,7 +32,7 @@ void setup()
 void loop()
 {
     // Read temperature sensor (assuming 0-100°C range, adjust formula as needed)
-    float currentTemp = analogRead(tempSensorPin) * (100.0 / 1023.0);
+    float currentTemp = static_cast<float>(analogRead(tempSensorPin)) * (100.0f / 1023.0f);
 
     // Update PID controller
     pid.update(currentTemp);
@@ -38,7 +41,7 @@ void loop()
     float output = pid.getOutput();
 
     // Apply output to Peltier cell (PWM control)
-    analogWrite(peltierPin, output);
+    analogWrite(peltierPin, static_cast<int>(output));
 
     // Print debugging information
     Serial.print("Temperature: ");
@@ -52,7 +55,7 @@ void loop()
     Serial.print(" | Mode: Reverse");
 
     // Determine cooling status
-    if (output > 10) { // Small threshold to avoid noise
+    if (output > 10.0f) { // Small threshold to avoid noise
         Serial.print(" | Status: COOLING");
     } else {
         Serial.print(" | Status: IDLE");

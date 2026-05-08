@@ -62,26 +62,34 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 
 ---
 
+## Minimum Requirements
+Due to the library's high-precision calculations and strict **AUTOSAR C++14** compliance (which utilizes 32-bit fixed-width types and namespace encapsulation), it is recommended to use an **Arduino Mega 2560** or more powerful boards (e.g., SAMD, ESP32, STM32). While it may compile for Arduino Uno, memory and processing overhead might impact real-time performance.
+
+---
+
 ## Quick Start
 
 ```cpp
 #include <AutoTunePID.h>
 
+// Use the atp namespace
+using namespace atp;
+
 // Initialize PID controller with output range and tuning method
-AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols);
 
 void setup() {
-  pid.setSetpoint(100.0); // Target setpoint
-  pid.enableInputFilter(0.1); // Optional input filtering
-  pid.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+  pid.setSetpoint(100.0f); // Target setpoint
+  pid.enableInputFilter(0.1f); // Optional input filtering
+  pid.enableAntiWindup(true, 0.8f); // Enable anti-windup with 80% threshold
   pid.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
   pid.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
 
 void loop() {
-  float input = analogRead(A0); // Read input
+  float input = static_cast<float>(analogRead(A0)); // Read input
   pid.update(input); // Update the PID controller
-  analogWrite(PWM_PIN, pid.getOutput()); // Write output
+  analogWrite(PWM_PIN, static_cast<int>(pid.getOutput())); // Write output
 }
 ```
 
