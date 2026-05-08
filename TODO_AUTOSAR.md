@@ -32,12 +32,12 @@ This document outlines the prioritized tasks required to bring the `AutoTunePID`
 ## Priority 2: Documentation & Polish (Standard)
 *Goal: Ensure long-term maintainability and compliance with documentation standards.*
 
-- [ ] **[P2-1] Doxygen Documentation (Rule A0-4-1):**
+- [x] **[P2-1] Doxygen Documentation (Rule A0-4-1):**
     - Add `@brief`, `@param`, and `@return` tags to all public methods.
     - Document internal state variables using `/**< ... */` format.
-- [ ] **[P2-2] Remove Global Dependencies:**
+- [x] **[P2-2] Remove Global Dependencies:**
     - If possible, abstract away from `PI` and use a local `constexpr` float to ensure precision consistency.
-- [ ] **[P2-3] Logical Cleanup:**
+- [x] **[P2-3] Logical Cleanup:**
     - Audit `constrain` and `map` usage to ensure they are operating on the correct types without intermediate overflows.
 
 ## Verification Tasks

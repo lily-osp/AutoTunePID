@@ -1,7 +1,17 @@
+/**
+ * @file AutoTunePID.cpp
+ * @brief Implementation of the AutoTunePID library.
+ * @details Adheres to AUTOSAR C++14 standards for type safety and deterministic behavior.
+ */
+
 #include "AutoTunePID.h"
 
 namespace atp {
 
+/**
+ * @brief Constructor for AutoTunePID.
+ * @details Initializes all member variables in the exact order of declaration to satisfy Rule A12-1-6.
+ */
 AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     : _minOutput(minOutput)
     , _maxOutput(maxOutput)
@@ -41,16 +51,19 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
 {
 }
 
+/** @brief Sets the controller setpoint. */
 void AutoTunePID::setSetpoint(float setpoint)
 {
     _setpoint = setpoint;
 }
 
+/** @brief Sets the auto-tuning method. */
 void AutoTunePID::setTuningMethod(TuningMethod method)
 {
     _method = method;
 }
 
+/** @brief Manually sets PID gains. */
 void AutoTunePID::setManualGains(float kp, float ki, float kd)
 {
     _kp = kp;
@@ -58,24 +71,28 @@ void AutoTunePID::setManualGains(float kp, float ki, float kd)
     _kd = kd;
 }
 
+/** @brief Configures input filtering. */
 void AutoTunePID::enableInputFilter(float alpha)
 {
     _inputFilterEnabled = true;
     _inputFilterAlpha = constrain(alpha, 0.01f, 1.0f);
 }
 
+/** @brief Configures output filtering. */
 void AutoTunePID::enableOutputFilter(float alpha)
 {
     _outputFilterEnabled = true;
     _outputFilterAlpha = constrain(alpha, 0.01f, 1.0f);
 }
 
+/** @brief Configures anti-windup protection. */
 void AutoTunePID::enableAntiWindup(bool enable, float threshold)
 {
     _antiWindupEnabled = enable;
     _integralWindupThreshold = threshold * (_maxOutput - _minOutput);
 }
 
+/** @brief Sets operational mode and resets state on 'Hold'. */
 void AutoTunePID::setOperationalMode(OperationalMode mode)
 {
     _operationalMode = mode;
@@ -86,21 +103,25 @@ void AutoTunePID::setOperationalMode(OperationalMode mode)
     }
 }
 
+/** @brief Sets manual mode output (0-100%). */
 void AutoTunePID::setManualOutput(float output)
 {
     _manualOutput = constrain(output, 0.0f, 100.0f);
 }
 
+/** @brief Sets override mode output. */
 void AutoTunePID::setOverrideOutput(float output)
 {
     _overrideOutput = constrain(output, _minOutput, _maxOutput);
 }
 
+/** @brief Sets tracking reference. */
 void AutoTunePID::setTrackReference(float reference)
 {
     _trackReference = reference;
 }
 
+/** @brief Sets tuning oscillation intensity. */
 void AutoTunePID::setOscillationMode(OscillationMode mode)
 {
     _oscillationMode = mode;
@@ -114,9 +135,13 @@ void AutoTunePID::setOscillationMode(OscillationMode mode)
     case OscillationMode::Mild:
         _oscillationSteps = 40;
         break;
+    default:
+        _oscillationSteps = 10;
+        break;
     }
 }
 
+/** @brief Sets exact number of tuning oscillations. */
 void AutoTunePID::setOscillationSteps(int32_t steps)
 {
     if (steps > 0) {
@@ -124,14 +149,17 @@ void AutoTunePID::setOscillationSteps(int32_t steps)
     }
 }
 
+/** @brief Sets lambda for IMC/Lambda tuning. */
 void AutoTunePID::setLambda(float lambda)
 {
     _lambda = lambda;
 }
 
+/** @brief Main update loop with strict timing. */
 void AutoTunePID::update(float currentInput)
 {
     const uint32_t now = millis();
+    // Maintain consistent sample time (100ms)
     if ((now - _lastUpdate) < 100U) {
         return;
     }
@@ -139,11 +167,13 @@ void AutoTunePID::update(float currentInput)
     const float dt = static_cast<float>(now - _lastUpdate) / 1000.0f;
     _lastUpdate = now;
 
+    // Apply input filtering if enabled
     if (_inputFilterEnabled && (_operationalMode != OperationalMode::Tune)) {
         currentInput = computeFilteredValue(currentInput, _inputFilteredValue, _inputFilterAlpha);
     }
     _input = currentInput;
 
+    // Handle different operational modes
     if (_operationalMode == OperationalMode::Tune) {
         performAutoTune(currentInput);
     } else if (_operationalMode == OperationalMode::Manual) {
@@ -158,6 +188,7 @@ void AutoTunePID::update(float currentInput)
     } else if (_operationalMode == OperationalMode::Hold) {
         return;
     } else if (_operationalMode == OperationalMode::Preserve) {
+        // Minimal update: just track error
         if (_operationalMode == OperationalMode::Reverse) {
             _error = _input - _setpoint;
         } else {
@@ -165,29 +196,35 @@ void AutoTunePID::update(float currentInput)
         }
         return;
     } else {
+        // Normal or Reverse PID modes
         if (_operationalMode == OperationalMode::Reverse) {
             _error = _input - _setpoint;
         } else {
             _error = _setpoint - _input;
         }
 
+        // Numerical integration
         if (abs(_error) < 0.001f) {
             _integral = 0.0f;
         } else {
             _integral += _error * dt;
         }
 
+        // Numerical differentiation
         _derivative = (_error - _previousError) / dt;
+        
         computePID();
         applyAntiWindup();
         _previousError = _error;
     }
 
+    // Apply output filtering if enabled
     if (_outputFilterEnabled && (_operationalMode != OperationalMode::Tune)) {
         _output = computeFilteredValue(_output, _outputFilteredValue, _outputFilterAlpha);
     }
 }
 
+/** @brief Internal auto-tune relay logic. */
 void AutoTunePID::performAutoTune(float currentInput)
 {
     static uint32_t lastToggleTime = 0U;
@@ -199,6 +236,8 @@ void AutoTunePID::performAutoTune(float currentInput)
 
     float highOutput;
     float lowOutput;
+    
+    // Calculate relay levels based on oscillation mode
     switch (_oscillationMode) {
     case OscillationMode::Normal:
         highOutput = _maxOutput;
@@ -218,6 +257,7 @@ void AutoTunePID::performAutoTune(float currentInput)
         break;
     }
 
+    // Induced oscillation every 1000ms
     if ((currentTime - lastToggleTime) >= 1000U) {
         outputState = !outputState;
         _output = outputState ? highOutput : lowOutput;
@@ -228,19 +268,21 @@ void AutoTunePID::performAutoTune(float currentInput)
         }
         oscillationCount++;
 
+        // End of tuning cycle
         if (oscillationCount >= _oscillationSteps) {
             _oscillationPeriod = static_cast<float>(currentTime - oscillationStartTime) / (static_cast<float>(_oscillationSteps) * 1000.0f);
 
             const float relayAmplitude = (_maxOutput - _minOutput) / 2.0f;
-            const float oscillationAmplitude = relayAmplitude;
+            const float oscillationAmplitude = relayAmplitude; // Assumption for relay test
             _ultimateGain = (4.0f * relayAmplitude) / (kPi * oscillationAmplitude);
 
+            // System estimation
             _processTimeConstant = 0.67f * _oscillationPeriod;
             _deadTime = 0.17f * _oscillationPeriod;
-
             _integralTime = 2.0f * _deadTime;
             _derivativeTime = _deadTime / 2.0f;
 
+            // Algorithm selection
             switch (_method) {
             case TuningMethod::ZieglerNichols:
                 calculateZieglerNicholsGains();
@@ -267,6 +309,7 @@ void AutoTunePID::performAutoTune(float currentInput)
     }
 }
 
+/** @brief Gains using Ziegler-Nichols Ultimate Period method. */
 void AutoTunePID::calculateZieglerNicholsGains()
 {
     _kp = 0.6f * _ultimateGain;
@@ -274,6 +317,7 @@ void AutoTunePID::calculateZieglerNicholsGains()
     _kd = _kp * _derivativeTime;
 }
 
+/** @brief Gains using Cohen-Coon empirical rules. */
 void AutoTunePID::calculateCohenCoonGains()
 {
     _kp = 0.8f * _ultimateGain;
@@ -281,6 +325,7 @@ void AutoTunePID::calculateCohenCoonGains()
     _kd = 0.194f * _kp * _oscillationPeriod;
 }
 
+/** @brief Gains using Internal Model Control (IMC). */
 void AutoTunePID::calculateIMCGains()
 {
     float lambda = _lambda;
@@ -293,6 +338,7 @@ void AutoTunePID::calculateIMCGains()
     _kd = (_kp * _deadTime) / 2.0f;
 }
 
+/** @brief Gains using Tyreus-Luyben conservative rules. */
 void AutoTunePID::calculateTyreusLuybenGains()
 {
     _kp = 0.45f * _ultimateGain;
@@ -300,6 +346,7 @@ void AutoTunePID::calculateTyreusLuybenGains()
     _kd = 0.0f;
 }
 
+/** @brief Gains using Lambda Tuning (Closed-loop damping). */
 void AutoTunePID::calculateLambdaTuningGains()
 {
     if (_lambda <= 0.0f) {
@@ -311,6 +358,7 @@ void AutoTunePID::calculateLambdaTuningGains()
     _kd = _kp * 0.5f * _deadTime;
 }
 
+/** @brief Internal PID math. */
 void AutoTunePID::computePID()
 {
     _error = _setpoint - _input;
@@ -327,6 +375,7 @@ void AutoTunePID::computePID()
     _output = constrain(_output, _minOutput, _maxOutput);
 }
 
+/** @brief Prevents integral windup based on threshold. */
 void AutoTunePID::applyAntiWindup()
 {
     if (_antiWindupEnabled && (abs(_integral) > _integralWindupThreshold)) {
@@ -334,6 +383,7 @@ void AutoTunePID::applyAntiWindup()
     }
 }
 
+/** @brief Generic exponential moving average filter. */
 float AutoTunePID::computeFilteredValue(float input, float& filteredValue, float alpha) const
 {
     filteredValue = (alpha * input) + ((1.0f - alpha) * filteredValue);

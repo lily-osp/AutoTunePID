@@ -1,22 +1,38 @@
+/**
+ * @file AutoTunePID.h
+ * @brief Header file for the AutoTunePID library.
+ * @details Implements a robust, AUTOSAR C++14 compliant PID controller with multiple auto-tuning algorithms.
+ */
+
 #ifndef AUTOTUNEPID_H
 #define AUTOTUNEPID_H
 
 #include <Arduino.h>
 #include <stdint.h>
 
+/**
+ * @namespace atp
+ * @brief Namespace for the AutoTunePID library.
+ */
 namespace atp {
 
-// Enumeration for different tuning methods
+/**
+ * @enum TuningMethod
+ * @brief Enumeration for different PID tuning algorithms.
+ * @details Mapped to uint8_t for memory efficiency and AUTOSAR compliance.
+ */
 enum class TuningMethod : uint8_t {
-    ZieglerNichols, // Ziegler-Nichols tuning method
-    CohenCoon, // Cohen-Coon tuning method
-    IMC, // Internal Model Control tuning method
-    TyreusLuyben, // Tyreus-Luyben tuning method
-    LambdaTuning, // Lambda Tuning (CLD) method
-    Manual // Manual tuning method
+    ZieglerNichols, /**< Ziegler-Nichols tuning method (Classic) */
+    CohenCoon,      /**< Cohen-Coon tuning method (Better for laggy systems) */
+    IMC,            /**< Internal Model Control tuning method (Robust) */
+    TyreusLuyben,   /**< Tyreus-Luyben tuning method (Conservative) */
+    LambdaTuning,   /**< Lambda Tuning (CLD) method (Smooth response) */
+    Manual          /**< Manual tuning method (Direct gain setting) */
 };
 
-// Backward compatibility for tuning methods
+/**
+ * @brief Backward compatibility for tuning methods.
+ */
 constexpr auto ZieglerNichols = TuningMethod::ZieglerNichols;
 constexpr auto CohenCoon = TuningMethod::CohenCoon;
 constexpr auto IMC = TuningMethod::IMC;
@@ -24,125 +40,224 @@ constexpr auto TyreusLuyben = TuningMethod::TyreusLuyben;
 constexpr auto LambdaTuning = TuningMethod::LambdaTuning;
 constexpr auto Manual = TuningMethod::Manual;
 
-// Enumeration for operational modes
+/**
+ * @enum OperationalMode
+ * @brief Enumeration for controller operational modes.
+ */
 enum class OperationalMode : uint8_t {
-    Normal, // Normal PID operation
-    Reverse, // Reverse PID operation (e.g., for cooling systems)
-    Manual, // Manual mode: direct output control, bypass PID calculations
-    Override, // Override mode: emergency override with fixed output value
-    Track, // Track mode: output follows a reference signal
-    Hold, // Hold the PID calculations to save resources
-    Preserve, // Preserve mode: minimal calculations, keep the system responsive
-    Tune, // Tune mode: perform auto-tuning to get Tu and Ku
-    Auto // Auto mode: automatically determine the best operational mode
+    Normal,   /**< Normal PID operation (Heating/Direct) */
+    Reverse,  /**< Reverse PID operation (Cooling/Indirect) */
+    Manual,   /**< Manual mode: direct output control */
+    Override, /**< Override mode: fixed emergency output */
+    Track,    /**< Track mode: output follows a reference signal */
+    Hold,     /**< Hold mode: maintain output, reset states */
+    Preserve, /**< Preserve mode: minimal calculations, keep responsive */
+    Tune,     /**< Tune mode: perform auto-tuning process */
+    Auto      /**< Auto mode: automatically determine best mode */
 };
 
-// Enumeration for oscillation modes
+/**
+ * @enum OscillationMode
+ * @brief Defines the amplitude of oscillations during auto-tuning.
+ */
 enum class OscillationMode : uint8_t {
-    Normal, // Full oscillation (MaxOutput - MinOutput)
-    Half, // Half oscillation (1/2 MaxOutput - 1/2 MinOutput)
-    Mild // Mild oscillation (1/4 MaxOutput - 1/4 MinOutput)
+    Normal, /**< Full oscillation (MaxOutput - MinOutput) */
+    Half,   /**< Half oscillation (Center +/- 25% range) */
+    Mild    /**< Mild oscillation (Center +/- 12.5% range) */
 };
 
+/**
+ * @class AutoTunePID
+ * @brief A safety-critical PID controller with built-in auto-tuning.
+ * @details Compliant with AUTOSAR C++14 standards.
+ */
 class AutoTunePID {
 public:
-    // Constructor to initialize the PID controller with min/max output and tuning method
+    /**
+     * @brief Constructor for the PID controller.
+     * @param minOutput The minimum allowed output value.
+     * @param maxOutput The maximum allowed output value.
+     * @param method Initial tuning method (default: Ziegler-Nichols).
+     */
     explicit AutoTunePID(float minOutput, float maxOutput, TuningMethod method = TuningMethod::ZieglerNichols);
 
-    // Configuration methods
-    void setSetpoint(float setpoint); // Set the desired setpoint
-    void setTuningMethod(TuningMethod method); // Set the tuning method
-    void setManualGains(float kp, float ki, float kd); // Set manual PID gains
-    void enableInputFilter(float alpha); // Enable input filtering with a given alpha value
-    void enableOutputFilter(float alpha); // Enable output filtering with a given alpha value
-    void enableAntiWindup(bool enable, float threshold = 0.8f); // Enable/disable anti-windup with optional threshold
-    void setOperationalMode(OperationalMode mode); // Set the operational mode
-    void setManualOutput(float output); // Set manual output value (0-100% for Manual mode)
-    void setOverrideOutput(float output); // Set override output value
-    void setTrackReference(float reference); // Set track reference signal
-    void setOscillationMode(OscillationMode mode); // Set the oscillation mode for auto-tuning
-    void setOscillationSteps(int32_t steps); // Set the number of oscillation steps for auto-tuning
-    void setLambda(float lambda); // Set the lambda parameter for Lambda Tuning (CLD)
+    // --- Configuration Methods ---
 
-    // Runtime methods
-    void update(float currentInput); // Update the PID controller with the current input
-    float getOutput() const { return _output; } // Get the current output value
-    float getKp() const { return _kp; } // Get the proportional gain (Kp)
-    float getKi() const { return _ki; } // Get the integral gain (Ki)
-    float getKd() const { return _kd; } // Get the derivative gain (Kd)
-    float getKu() const { return _ultimateGain; } // Get the ultimate gain (Ku)
-    float getTu() const { return _oscillationPeriod; } // Get the oscillation period (Tu)
-    float getSetpoint() const { return _setpoint; } // Get the current setpoint
-    OperationalMode getOperationalMode() const { return _operationalMode; } // Get the current operational mode
-    float getLambda() const { return _lambda; } // Get the lambda parameter for Lambda Tuning (CLD)
+    /**
+     * @brief Sets the desired target value.
+     * @param setpoint The target value to reach.
+     */
+    void setSetpoint(float setpoint);
+
+    /**
+     * @brief Changes the auto-tuning method.
+     * @param method The tuning method to use.
+     */
+    void setTuningMethod(TuningMethod method);
+
+    /**
+     * @brief Manually sets the PID gains.
+     * @param kp Proportional gain.
+     * @param ki Integral gain.
+     * @param kd Derivative gain.
+     */
+    void setManualGains(float kp, float ki, float kd);
+
+    /**
+     * @brief Enables and configures the input filter.
+     * @param alpha Filter coefficient (0.01 - 1.0).
+     */
+    void enableInputFilter(float alpha);
+
+    /**
+     * @brief Enables and configures the output filter.
+     * @param alpha Filter coefficient (0.01 - 1.0).
+     */
+    void enableOutputFilter(float alpha);
+
+    /**
+     * @brief Configures anti-windup protection.
+     * @param enable Whether to enable protection.
+     * @param threshold Integral limit factor (default: 0.8).
+     */
+    void enableAntiWindup(bool enable, float threshold = 0.8f);
+
+    /**
+     * @brief Switches the controller's operational mode.
+     * @param mode The desired operational mode.
+     */
+    void setOperationalMode(OperationalMode mode);
+
+    /**
+     * @brief Sets the output value for Manual mode.
+     * @param output Desired output (0 - 100%).
+     */
+    void setManualOutput(float output);
+
+    /**
+     * @brief Sets the output value for Override mode.
+     * @param output Fixed output value.
+     */
+    void setOverrideOutput(float output);
+
+    /**
+     * @brief Sets the reference signal for Track mode.
+     * @param reference The value to follow.
+     */
+    void setTrackReference(float reference);
+
+    /**
+     * @brief Sets the auto-tuning oscillation range.
+     * @param mode The desired oscillation mode.
+     */
+    void setOscillationMode(OscillationMode mode);
+
+    /**
+     * @brief Sets the number of oscillations for tuning.
+     * @param steps Number of steps (must be > 0).
+     */
+    void setOscillationSteps(int32_t steps);
+
+    /**
+     * @brief Sets the lambda parameter for Lambda/IMC tuning.
+     * @param lambda The desired closed-loop time constant.
+     */
+    void setLambda(float lambda);
+
+    // --- Runtime Methods ---
+
+    /**
+     * @brief Main processing loop for the PID controller.
+     * @param currentInput The latest process measurement.
+     */
+    void update(float currentInput);
+
+    /** @return Current controller output. */
+    float getOutput() const { return _output; }
+    /** @return Proportional gain (Kp). */
+    float getKp() const { return _kp; }
+    /** @return Integral gain (Ki). */
+    float getKi() const { return _ki; }
+    /** @return Derivative gain (Kd). */
+    float getKd() const { return _kd; }
+    /** @return Calculated Ultimate Gain (Ku). */
+    float getKu() const { return _ultimateGain; }
+    /** @return Calculated Oscillation Period (Tu). */
+    float getTu() const { return _oscillationPeriod; }
+    /** @return Current setpoint. */
+    float getSetpoint() const { return _setpoint; }
+    /** @return Current operational mode. */
+    OperationalMode getOperationalMode() const { return _operationalMode; }
+    /** @return Current lambda parameter. */
+    float getLambda() const { return _lambda; }
 
 private:
-    // PID computation
-    void computePID(); // Compute the PID output
-    void applyAntiWindup(); // Apply anti-windup to prevent integral windup
-    float computeFilteredValue(float input, float& filteredValue, float alpha) const; // Compute filtered value using exponential moving average
+    // PID Internal Computation
+    void computePID();
+    void applyAntiWindup();
+    float computeFilteredValue(float input, float& filteredValue, float alpha) const;
 
-    // Autotuning methods
-    void performAutoTune(float currentInput); // Perform auto-tuning based on the current input
-    void calculateZieglerNicholsGains(); // Calculate PID gains using Ziegler-Nichols method
-    void calculateCohenCoonGains(); // Calculate PID gains using Cohen-Coon method
-    void calculateIMCGains(); // Calculate PID gains using IMC method
-    void calculateTyreusLuybenGains(); // Calculate PID gains using Tyreus-Luyben method
-    void calculateLambdaTuningGains(); // Calculate PID gains using Lambda Tuning (CLD) method
+    // Auto-tuning Internal Methods
+    void performAutoTune(float currentInput);
+    void calculateZieglerNicholsGains();
+    void calculateCohenCoonGains();
+    void calculateIMCGains();
+    void calculateTyreusLuybenGains();
+    void calculateLambdaTuningGains();
 
     // Configuration (Const)
-    const float _minOutput; // Minimum output value
-    const float _maxOutput; // Maximum output value
+    const float _minOutput; /**< Lower bound of output */
+    const float _maxOutput; /**< Upper bound of output */
 
     // Configuration (Mutable)
-    TuningMethod _method; // Current tuning method
-    OperationalMode _operationalMode; // Current operational mode
-    OscillationMode _oscillationMode; // Current oscillation mode for auto-tuning
-    int32_t _oscillationSteps; // Number of oscillation steps for auto-tuning
-    float _setpoint; // Desired setpoint
-    float _lambda; // Lambda parameter for Lambda Tuning (CLD)
+    TuningMethod _method;           /**< Selected tuning method */
+    OperationalMode _operationalMode; /**< Current operational mode */
+    OscillationMode _oscillationMode; /**< Auto-tuning oscillation scope */
+    int32_t _oscillationSteps;      /**< Number of tuning oscillations */
+    float _setpoint;                /**< Target value */
+    float _lambda;                  /**< Lambda parameter for IMC/Lambda tuning */
 
-    // Manual, Override, and Track mode parameters
-    float _manualOutput; // Manual output value (0-100%)
-    float _overrideOutput; // Override output value
-    float _trackReference; // Track reference signal
+    // Operational parameters
+    float _manualOutput;   /**< User-defined output in Manual mode */
+    float _overrideOutput; /**< Fixed output in Override mode */
+    float _trackReference; /**< Target reference in Track mode */
 
-    // PID gains and states
-    float _kp; // Proportional gain
-    float _ki; // Integral gain
-    float _kd; // Derivative gain
-    float _error; // Current error
-    float _previousError; // Previous error for derivative
-    float _integral; // Integral sum
-    float _derivative; // Derivative value
-    float _output; // Final controller output
-    float _input; // Latest process input
+    // PID Gains and State
+    float _kp;            /**< Proportional gain */
+    float _ki;            /**< Integral gain */
+    float _kd;            /**< Derivative gain */
+    float _error;         /**< Current tracking error */
+    float _previousError; /**< Error from last update */
+    float _integral;      /**< Accumulated integral term */
+    float _derivative;    /**< Current derivative term */
+    float _output;        /**< Final computed output */
+    float _input;         /**< Last process measurement */
 
-    // Anti-windup
-    bool _antiWindupEnabled; // Flag to enable/disable anti-windup
-    float _integralWindupThreshold; // Threshold for integral windup
+    // Safety and Filtering
+    bool _antiWindupEnabled;        /**< Flag for anti-windup status */
+    float _integralWindupThreshold; /**< Limit for integral term */
 
-    // Autotuning results
-    uint32_t _lastUpdate; // Timestamp of the last update
-    float _ultimateGain; // Ultimate gain (Ku)
-    float _oscillationPeriod; // Oscillation period (Tu)
+    // Tuning Metrics
+    uint32_t _lastUpdate;    /**< Millis() of last update */
+    float _ultimateGain;     /**< Ku calculated from relay test */
+    float _oscillationPeriod; /**< Tu in seconds from relay test */
 
-    // Process parameters
-    float _processTimeConstant; // Process time constant (T)
-    float _deadTime; // Dead time (L)
-    float _integralTime; // Integral time (Ti)
-    float _derivativeTime; // Derivative time (Td)
+    // Derived Process Parameters
+    float _processTimeConstant; /**< Estimated system time constant (T) */
+    float _deadTime;            /**< Estimated system dead time (L) */
+    float _integralTime;        /**< Calculated Ti */
+    float _derivativeTime;      /**< Calculated Td */
 
-    // Filtering
-    bool _inputFilterEnabled; // Flag for input filtering
-    bool _outputFilterEnabled; // Flag for output filtering
-    float _inputFilteredValue; // Filtered input value
-    float _outputFilteredValue; // Filtered output value
-    float _inputFilterAlpha; // Input filter coefficient
-    float _outputFilterAlpha; // Output filter coefficient
+    // Filtering Infrastructure
+    bool _inputFilterEnabled;   /**< Input smoothing enabled */
+    bool _outputFilterEnabled;  /**< Output smoothing enabled */
+    float _inputFilteredValue;  /**< State of input filter */
+    float _outputFilteredValue; /**< State of output filter */
+    float _inputFilterAlpha;    /**< Input filter responsiveness */
+    float _outputFilterAlpha;   /**< Output filter responsiveness */
 
     // Constants
-    static constexpr float kPi = 3.14159265f;
+    static constexpr float kPi = 3.14159265f; /**< PI constant for calculations */
 };
 
 } // namespace atp
