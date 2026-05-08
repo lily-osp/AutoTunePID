@@ -18,15 +18,15 @@ This document outlines the prioritized tasks required to bring the `AutoTunePID`
 ## Priority 1: Interface & Safety (High)
 *Goal: Prevent common C++ pitfalls and ensure strict interface contracts.*
 
-- [ ] **[P1-1] Explicit Constructor (Rule A12-1-1):**
+- [x] **[P1-1] Explicit Constructor (Rule A12-1-1):**
     - Mark the `AutoTunePID` constructor as `explicit` to prevent unintended implicit type conversions.
-- [ ] **[P1-2] Const Correctness (Rule A7-1-1):**
+- [x] **[P1-2] Const Correctness (Rule A7-1-1):**
     - Audit all methods and mark non-mutating ones (e.g., getters, `computeFilteredValue`) as `const`.
     - Pass complex types (if any) by `const` reference.
-- [ ] **[P1-3] Explicit Type Conversions (Rule A5-2-1):**
+- [x] **[P1-3] Explicit Type Conversions (Rule A5-2-1):**
     - Replace all implicit conversions and C-style casts with `static_cast<T>()`.
     - Pay special attention to `millis()` to `float` conversions and PID term math.
-- [ ] **[P1-4] Complete Member Initialization (Rule A12-1-6):**
+- [x] **[P1-4] Complete Member Initialization (Rule A12-1-6):**
     - Ensure every class member is initialized in the constructor's member initializer list in the order of declaration.
 
 ## Priority 2: Documentation & Polish (Standard)

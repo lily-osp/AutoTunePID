@@ -90,9 +90,11 @@ private:
     void calculateTyreusLuybenGains(); // Calculate PID gains using Tyreus-Luyben method
     void calculateLambdaTuningGains(); // Calculate PID gains using Lambda Tuning (CLD) method
 
-    // Configuration
+    // Configuration (Const)
     const float _minOutput; // Minimum output value
     const float _maxOutput; // Maximum output value
+
+    // Configuration (Mutable)
     TuningMethod _method; // Current tuning method
     OperationalMode _operationalMode; // Current operational mode
     OscillationMode _oscillationMode; // Current oscillation mode for auto-tuning
@@ -105,35 +107,39 @@ private:
     float _overrideOutput; // Override output value
     float _trackReference; // Track reference signal
 
-    // PID parameters
-    float _kp, _ki, _kd; // Proportional, integral, and derivative gains
-    float _error, _previousError; // Current and previous error values
-    float _integral, _derivative; // Integral and derivative terms
-    float _output; // Current output value
-    float _input; // Current input value (e.g., sensor reading)
+    // PID gains and states
+    float _kp; // Proportional gain
+    float _ki; // Integral gain
+    float _kd; // Derivative gain
+    float _error; // Current error
+    float _previousError; // Previous error for derivative
+    float _integral; // Integral sum
+    float _derivative; // Derivative value
+    float _output; // Final controller output
+    float _input; // Latest process input
 
     // Anti-windup
     bool _antiWindupEnabled; // Flag to enable/disable anti-windup
     float _integralWindupThreshold; // Threshold for integral windup
 
-    // Autotuning parameters
+    // Autotuning results
     uint32_t _lastUpdate; // Timestamp of the last update
     float _ultimateGain; // Ultimate gain (Ku)
     float _oscillationPeriod; // Oscillation period (Tu)
 
-    // Additional parameters for advanced tuning
+    // Process parameters
     float _processTimeConstant; // Process time constant (T)
     float _deadTime; // Dead time (L)
     float _integralTime; // Integral time (Ti)
     float _derivativeTime; // Derivative time (Td)
 
     // Filtering
-    bool _inputFilterEnabled; // Flag to enable/disable input filtering
-    bool _outputFilterEnabled; // Flag to enable/disable output filtering
+    bool _inputFilterEnabled; // Flag for input filtering
+    bool _outputFilterEnabled; // Flag for output filtering
     float _inputFilteredValue; // Filtered input value
     float _outputFilteredValue; // Filtered output value
-    float _inputFilterAlpha; // Alpha value for input filtering
-    float _outputFilterAlpha; // Alpha value for output filtering
+    float _inputFilterAlpha; // Input filter coefficient
+    float _outputFilterAlpha; // Output filter coefficient
 
     // Constants
     static constexpr float kPi = 3.14159265f;
