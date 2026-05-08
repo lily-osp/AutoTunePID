@@ -5,14 +5,14 @@ This document outlines the prioritized tasks required to bring the `AutoTunePID`
 ## Priority 0: Core Foundation (Critical)
 *Goal: Establish the structural and type-safety baseline.*
 
-- [ ] **[P0-1] Namespace Encapsulation (Rule A7-2-1):**
+- [x] **[P0-1] Namespace Encapsulation (Rule A7-2-1):**
     - Wrap the library in `namespace atp {}`.
     - Provide `using` declarations or a compatibility header for backward compatibility (optional).
-- [ ] **[P0-2] Fixed-Width Integers (Rule A0-1-1):**
-    - Include `<cstdint>`.
+- [x] **[P0-2] Fixed-Width Integers (Rule A0-1-1):**
+    - Include `<stdint.h>`.
     - Replace all `int` with `int32_t`.
     - Replace all `unsigned long` with `uint32_t`.
-- [ ] **[P0-3] Explicit Floating-Point Literals (Rule A0-1-6):**
+- [x] **[P0-3] Explicit Floating-Point Literals (Rule A0-1-6):**
     - Append `f` suffix to all floating-point literals (e.g., `0.5` -> `0.5f`) to prevent implicit `double` promotion.
 
 ## Priority 1: Interface & Safety (High)
