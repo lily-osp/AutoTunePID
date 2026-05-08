@@ -1,6 +1,9 @@
 # AutoTunePID Library Keywords
 # Syntax coloring for Arduino IDE
 
+# Namespace
+atp	KEYWORD1
+
 # Classes
 AutoTunePID	KEYWORD1
 
@@ -18,6 +21,8 @@ LambdaTuning	KEYWORD2
 Manual	KEYWORD2
 Normal	KEYWORD2
 Reverse	KEYWORD2
+Override	KEYWORD2
+Track	KEYWORD2
 Hold	KEYWORD2
 Preserve	KEYWORD2
 Tune	KEYWORD2
@@ -33,6 +38,9 @@ enableInputFilter	KEYWORD2
 enableOutputFilter	KEYWORD2
 enableAntiWindup	KEYWORD2
 setOperationalMode	KEYWORD2
+setManualOutput	KEYWORD2
+setOverrideOutput	KEYWORD2
+setTrackReference	KEYWORD2
 setOscillationMode	KEYWORD2
 setOscillationSteps	KEYWORD2
 setLambda	KEYWORD2
