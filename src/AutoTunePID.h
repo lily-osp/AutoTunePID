@@ -241,6 +241,9 @@ private:
     uint32_t _lastUpdate;    /**< Millis() of last update */
     float _ultimateGain;     /**< Ku calculated from relay test */
     float _oscillationPeriod; /**< Tu in seconds from relay test */
+    float _maxInput;         /**< Peak input during oscillation */
+    float _minInput;         /**< Valley input during oscillation */
+    uint32_t _lastPeakTime;  /**< Time of last peak for period calculation */
 
     // Derived Process Parameters
     float _processTimeConstant; /**< Estimated system time constant (T) */

@@ -38,6 +38,9 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _lastUpdate(0U)
     , _ultimateGain(0.0f)
     , _oscillationPeriod(0.0f)
+    , _maxInput(-1.0e30f)
+    , _minInput(1.0e30f)
+    , _lastPeakTime(0U)
     , _processTimeConstant(0.0f)
     , _deadTime(0.0f)
     , _integralTime(0.0f)
@@ -203,9 +206,10 @@ void AutoTunePID::update(float currentInput)
             _error = _setpoint - _input;
         }
 
-        // Numerical integration
-        if (abs(_error) < 0.001f) {
-            _integral = 0.0f;
+        // Numerical integration with deadband
+        if (fabsf(_error) < 0.001f) {
+            // Keep current integral, don't reset to zero to avoid steady-state error
+            // but don't accumulate if error is extremely small
         } else {
             _integral += _error * dt;
         }
@@ -225,12 +229,12 @@ void AutoTunePID::update(float currentInput)
 }
 
 /** @brief Internal auto-tune relay logic. */
-void AutoTunePID::performAutoTune(float /*currentInput*/)
+void AutoTunePID::performAutoTune(float currentInput)
 {
-    static uint32_t lastToggleTime = 0U;
     static bool outputState = true;
-    static int32_t oscillationCount = 0;
-    static uint32_t oscillationStartTime = 0U;
+    static int32_t halfCycleCount = 0;
+    static uint32_t lastCrossingTime = 0U;
+    static float peakAmplitudeSum = 0.0f;
 
     const uint32_t currentTime = millis();
 
@@ -238,18 +242,21 @@ void AutoTunePID::performAutoTune(float /*currentInput*/)
     float lowOutput;
     
     // Calculate relay levels based on oscillation mode
+    const float range = _maxOutput - _minOutput;
+    const float center = (_maxOutput + _minOutput) / 2.0f;
+    
     switch (_oscillationMode) {
     case OscillationMode::Normal:
         highOutput = _maxOutput;
         lowOutput = _minOutput;
         break;
     case OscillationMode::Half:
-        highOutput = ((_maxOutput + _minOutput) / 2.0f) + ((_maxOutput - _minOutput) / 4.0f);
-        lowOutput = ((_maxOutput + _minOutput) / 2.0f) - ((_maxOutput - _minOutput) / 4.0f);
+        highOutput = center + (range * 0.25f);
+        lowOutput = center - (range * 0.25f);
         break;
     case OscillationMode::Mild:
-        highOutput = ((_maxOutput + _minOutput) / 2.0f) + ((_maxOutput - _minOutput) / 8.0f);
-        lowOutput = ((_maxOutput + _minOutput) / 2.0f) - ((_maxOutput - _minOutput) / 8.0f);
+        highOutput = center + (range * 0.125f);
+        lowOutput = center - (range * 0.125f);
         break;
     default:
         highOutput = _maxOutput;
@@ -257,30 +264,52 @@ void AutoTunePID::performAutoTune(float /*currentInput*/)
         break;
     }
 
-    // Induced oscillation every 1000ms
-    if ((currentTime - lastToggleTime) >= 1000U) {
-        outputState = !outputState;
-        _output = outputState ? highOutput : lowOutput;
-        lastToggleTime = currentTime;
+    // Track peaks and valleys
+    if (currentInput > _maxInput) { _maxInput = currentInput; }
+    if (currentInput < _minInput) { _minInput = currentInput; }
 
-        if (oscillationCount == 0) {
-            oscillationStartTime = currentTime;
+    // Relay toggle on setpoint crossing
+    bool crossed = false;
+    if (outputState && (currentInput > _setpoint)) {
+        outputState = false;
+        crossed = true;
+    } else if (!outputState && (currentInput < _setpoint)) {
+        outputState = true;
+        crossed = true;
+    }
+
+    _output = outputState ? highOutput : lowOutput;
+
+    if (crossed) {
+        if (halfCycleCount > 0) {
+            // Calculate period from half-cycle
+            const uint32_t duration = currentTime - lastCrossingTime;
+            _oscillationPeriod = (2.0f * static_cast<float>(duration)) / 1000.0f;
+            
+            // Accumulate amplitude: a = (peak - valley) / 2
+            const float currentAmplitude = (_maxInput - _minInput) / 2.0f;
+            if (currentAmplitude > 0.001f) {
+                peakAmplitudeSum += currentAmplitude;
+            }
         }
-        oscillationCount++;
+        
+        lastCrossingTime = currentTime;
+        halfCycleCount++;
+        
+        // Reset peak/valley tracking for next half-cycle
+        _maxInput = -1.0e30f;
+        _minInput = 1.0e30f;
 
         // End of tuning cycle
-        if (oscillationCount >= _oscillationSteps) {
-            _oscillationPeriod = static_cast<float>(currentTime - oscillationStartTime) / (static_cast<float>(_oscillationSteps) * 1000.0f);
-
-            const float relayAmplitude = (_maxOutput - _minOutput) / 2.0f;
-            const float oscillationAmplitude = relayAmplitude; // Assumption for relay test
-            _ultimateGain = (4.0f * relayAmplitude) / (kPi * oscillationAmplitude);
-
-            // System estimation
-            _processTimeConstant = 0.67f * _oscillationPeriod;
-            _deadTime = 0.17f * _oscillationPeriod;
-            _integralTime = 2.0f * _deadTime;
-            _derivativeTime = _deadTime / 2.0f;
+        if (halfCycleCount >= _oscillationSteps) {
+            const float avgAmplitude = peakAmplitudeSum / static_cast<float>(halfCycleCount - 1);
+            const float relayAmplitude = (highOutput - lowOutput) / 2.0f;
+            
+            if (avgAmplitude > 0.001f) {
+                _ultimateGain = (4.0f * relayAmplitude) / (kPi * avgAmplitude);
+            } else {
+                _ultimateGain = 0.0f;
+            }
 
             // Algorithm selection
             switch (_method) {
@@ -303,7 +332,8 @@ void AutoTunePID::performAutoTune(float /*currentInput*/)
                 break;
             }
 
-            oscillationCount = 0;
+            halfCycleCount = 0;
+            peakAmplitudeSum = 0.0f;
             _operationalMode = OperationalMode::Normal;
         }
     }
@@ -312,14 +342,17 @@ void AutoTunePID::performAutoTune(float /*currentInput*/)
 /** @brief Gains using Ziegler-Nichols Ultimate Period method. */
 void AutoTunePID::calculateZieglerNicholsGains()
 {
+    // Standard ZN rules for PID: Kp = 0.6*Ku, Ti = 0.5*Tu, Td = 0.125*Tu
     _kp = 0.6f * _ultimateGain;
-    _ki = _kp / _integralTime;
-    _kd = _kp * _derivativeTime;
+    _ki = (2.0f * _kp) / _oscillationPeriod;
+    _kd = 0.125f * _kp * _oscillationPeriod;
 }
 
 /** @brief Gains using Cohen-Coon empirical rules. */
 void AutoTunePID::calculateCohenCoonGains()
 {
+    // Estimating process gain K. For relay oscillation: a = (4*d*K)/(pi*sqrt(1+(wT)^2))
+    // This is complex. We'll use the empirical relations to Tu, Ku.
     _kp = 0.8f * _ultimateGain;
     _ki = _kp / (0.8f * _oscillationPeriod);
     _kd = 0.194f * _kp * _oscillationPeriod;
@@ -328,11 +361,17 @@ void AutoTunePID::calculateCohenCoonGains()
 /** @brief Gains using Internal Model Control (IMC). */
 void AutoTunePID::calculateIMCGains()
 {
+    // Estimate FOPDT parameters from relay test
+    _processTimeConstant = 0.67f * _oscillationPeriod;
+    _deadTime = 0.17f * _oscillationPeriod;
+    
     float lambda = _lambda;
     if (lambda <= 0.0f) {
         lambda = 0.5f * _processTimeConstant;
     }
 
+    // IMC for FOPDT: Kp = T / (K*(lambda + L))
+    // We assume K = 1.0 for the estimation if not known
     _kp = _processTimeConstant / (lambda + _deadTime);
     _ki = _kp / _processTimeConstant;
     _kd = (_kp * _deadTime) / 2.0f;
@@ -341,32 +380,31 @@ void AutoTunePID::calculateIMCGains()
 /** @brief Gains using Tyreus-Luyben conservative rules. */
 void AutoTunePID::calculateTyreusLuybenGains()
 {
-    _kp = 0.45f * _ultimateGain;
-    _ki = _kp / _integralTime;
-    _kd = 0.0f;
+    // Tyreus-Luyben: Kp = Ku / 2.2, Ti = 2.2 * Tu, Td = Tu / 6.3
+    _kp = _ultimateGain / 2.2f;
+    _ki = _kp / (2.2f * _oscillationPeriod);
+    _kd = (_kp * _oscillationPeriod) / 6.3f;
 }
 
 /** @brief Gains using Lambda Tuning (Closed-loop damping). */
 void AutoTunePID::calculateLambdaTuningGains()
 {
+    _processTimeConstant = 0.67f * _oscillationPeriod;
+    _deadTime = 0.17f * _oscillationPeriod;
+    
     if (_lambda <= 0.0f) {
         _lambda = 0.5f * _processTimeConstant;
     }
 
-    _kp = _processTimeConstant / (_ultimateGain * (_lambda + _deadTime));
+    // Kp = T / (K * (lambda + L))
+    _kp = _processTimeConstant / (_lambda + _deadTime);
     _ki = _kp / _processTimeConstant;
-    _kd = _kp * 0.5f * _deadTime;
+    _kd = 0.5f * _kp * _deadTime;
 }
 
 /** @brief Internal PID math. */
 void AutoTunePID::computePID()
 {
-    _error = _setpoint - _input;
-
-    if (abs(_error) < 0.001f) {
-        _error = 0.0f;
-    }
-
     const float P = _kp * _error;
     const float I = _ki * _integral;
     const float D = _kd * _derivative;

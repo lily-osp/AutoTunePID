@@ -169,40 +169,40 @@ The library implements five distinct auto-tuning algorithms:
 
 1. **Ziegler-Nichols**:
    
-   - Oscillates the system to determine Ku and Tu based on output extremes.
+   - Oscillates the system to determine $K_u$ and $T_u$ based on output extremes.
    - Calculates PID gains:
-     - $ K_p = 0.6 \cdot Ku $
-     - $ K_i = \frac{1.2 \cdot K_p}{Tu} $
-     - $ K_d = 0.075 \cdot K_p \cdot Tu $
+     $$ K_p = 0.6 \cdot K_u $$
+     $$ K_i = \frac{2.0 \cdot K_p}{T_u} $$
+     $$ K_d = 0.125 \cdot K_p \cdot T_u $$
 
 2. **Cohen-Coon**:
    
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
-     - $ K_p = 0.8 \cdot Ku $
-     - $ K_i = \frac{K_p}{0.8 \cdot Tu} $
-     - $ K_d = 0.194 \cdot K_p \cdot Tu $
+     $$ K_p = 0.8 \cdot K_u $$
+     $$ K_i = \frac{K_p}{0.8 \cdot T_u} $$
+     $$ K_d = 0.194 \cdot K_p \cdot T_u $$
 
 3. **IMC (Internal Model Control)**:
    
-   - Incorporates a smoothing factor ('λ') to adjust response speed:
-     - $ K_p = 0.4 \cdot Ku $
-     - $ K_i = \frac{K_p}{2 \cdot \lambda} $
-     - $ K_d = 0.5 \cdot K_p \cdot \lambda $
+   - Incorporates a smoothing factor ($\lambda$) to adjust response speed:
+     $$ K_p = \frac{T}{\lambda + L} $$
+     $$ K_i = \frac{K_p}{T} $$
+     $$ K_d = \frac{K_p \cdot L}{2} $$
 
 4. **Tyreus-Luyben**:
    
    - Provides robust tuning with minimal overshoot:
-     - $ K_p = 0.45 \cdot Ku $
-     - $ K_i = \frac{K_p}{2.2 \cdot Tu} $
-     - $ K_d = 0.0 $ (No derivative term)
+     $$ K_p = \frac{K_u}{2.2} $$
+     $$ K_i = \frac{K_p}{2.2 \cdot T_u} $$
+     $$ K_d = \frac{K_p \cdot T_u}{6.3} $$
 
 5. **Lambda Tuning (CLD)**:
    
    - Optimizes systems with significant dead time:
-     - $ K_p = \frac{T}{K(\lambda + L)} $
-     - $ K_i = \frac{K_p}{T} = \frac{1}{K(\lambda + L)} $
-     - $ K_d = K_p \cdot 0.5L = \frac{0.5L \cdot T}{K(\lambda + L)} $
+     $$ K_p = \frac{T}{\lambda + L} $$
+     $$ K_i = \frac{K_p}{T} $$
+     $$ K_d = 0.5 \cdot K_p \cdot L $$
 
 ---
 
@@ -210,8 +210,8 @@ The library implements five distinct auto-tuning algorithms:
 
 Filters smooth inputs and outputs using an exponential moving average:
 
-- $\text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue})$
-- $ \alpha $: Responsiveness of the filter (range: 0.01–1.0).
+- $$ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) $$
+- $\alpha$: Responsiveness of the filter (range: 0.01–1.0).
 
 ---
 

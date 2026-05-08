@@ -35,12 +35,12 @@ The Ziegler-Nichols method is one of the oldest and most widely used tuning appr
 2. **Increase Gain:**
    - Gradually increase the proportional gain (‘Kp’) until the system oscillates continuously.
 3. **Record Parameters:**
-   - Measure and note the ultimate gain (‘Ku’) and ultimate period (‘Tu’).
+   - Measure and note the ultimate gain ($K_u$) and ultimate period ($T_u$).
 4. **Calculate PID Gains:**
    - Use the following formulas to calculate the PID parameters:
-     - $ Kp = 0.6 \cdot Ku $
-     - $ Ki = 1.2 \cdot Kp / Tu $
-     - $ Kd = 0.075 \cdot Kp \cdot Tu $
+     $$ K_p = 0.6 \cdot K_u $$
+     $$ K_i = \frac{2.0 \cdot K_p}{T_u} $$
+     $$ K_d = 0.125 \cdot K_p \cdot T_u $$
 
 ### Strengths
 
@@ -77,12 +77,12 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
 
 1. **Induce Oscillations:**
    - Use a relay or proportional controller to drive the system into oscillation.
-   - Measure the ultimate gain ('Ku') and ultimate period ('Tu').
+   - Measure the ultimate gain ($K_u$) and ultimate period ($T_u$).
 2. **Calculate PID Gains:**
    - Use the following formulas (simplified but effective):
-     - $ Kp = 0.8 \cdot Ku $
-     - $ Ki = Kp / (0.8 \cdot Tu) $
-     - $ Kd = 0.194 \cdot Kp \cdot Tu $
+     $$ K_p = 0.8 \cdot K_u $$
+     $$ K_i = \frac{K_p}{0.8 \cdot T_u} $$
+     $$ K_d = 0.194 \cdot K_p \cdot T_u $$
 
 ### Strengths
 
