@@ -40,29 +40,32 @@ Welcome to the AutoTunePID library! This guide will help you get started quickly
 Here's the simplest way to use AutoTunePID:
 
 ```cpp
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
+
+using namespace atp;
 
 // Create PID controller (min output, max output, tuning method)
-AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols);
 
 void setup() {
     // Set your target value (setpoint)
-    pid.setSetpoint(100.0); // Target temperature, speed, etc.
+    pid.setSetpoint(100.0f); // Target temperature, speed, etc.
 
     // Optional: Set manual PID gains (skip if using auto-tuning)
-    pid.setManualGains(2.0, 0.5, 0.1); // Kp, Ki, Kd
+    pid.setManualGains(2.0f, 0.5f, 0.1f); // Kp, Ki, Kd
 }
 
 void loop() {
     // Read your process variable (temperature, speed, position, etc.)
-    float currentValue = analogRead(A0) * (100.0 / 1023.0); // Scale to your units
+    // Scale to your units (e.g., 0-100°C)
+    float currentValue = static_cast<float>(analogRead(A0)) * (100.0f / 1023.0f); 
 
     // Update PID controller
     pid.update(currentValue);
 
     // Get control output and apply to your actuator
     float output = pid.getOutput();
-    analogWrite(9, output); // PWM output to motor, heater, etc.
+    analogWrite(9, static_cast<int>(output)); // PWM output to motor, heater, etc.
 
     delay(100); // Control loop timing
 }
@@ -89,8 +92,8 @@ PID stands for **Proportional-Integral-Derivative**. It's a control algorithm th
 
 | Term | Description | Your Code |
 |------|-------------|-----------|
-| **Setpoint (SP)** | Target value you want | `pid.setSetpoint(100.0)` |
-| **Process Variable (PV)** | Current measured value | `float currentValue = analogRead(A0)` |
+| **Setpoint (SP)** | Target value you want | `pid.setSetpoint(100.0f)` |
+| **Process Variable (PV)** | Current measured value | `float currentValue = static_cast<float>(analogRead(A0))` |
 | **Error** | Difference: SP - PV | Calculated automatically |
 | **Output** | Control signal to actuator | `pid.getOutput()` |
 | **PID Gains** | Control sensitivity | `pid.setManualGains(Kp, Ki, Kd)` |
@@ -111,41 +114,47 @@ Choose based on your application:
 ### Temperature Control
 
 ```cpp
+using namespace atp;
+
 // Heater control (Normal mode)
-AutoTunePID heaterPID(0, 255, TuningMethod::ZieglerNichols);
-heaterPID.setSetpoint(25.0); // Target temperature in °C
+AutoTunePID heaterPID(0.0f, 255.0f, TuningMethod::ZieglerNichols);
+heaterPID.setSetpoint(25.0f); // Target temperature in °C
 
 // In loop:
 float currentTemp = readTemperatureSensor();
 heaterPID.update(currentTemp);
-analogWrite(heaterPin, heaterPID.getOutput());
+analogWrite(heaterPin, static_cast<int>(heaterPID.getOutput()));
 ```
 
 ### Motor Speed Control
 
 ```cpp
+using namespace atp;
+
 // DC motor control
-AutoTunePID motorPID(0, 255, TuningMethod::CohenCoon);
-motorPID.setSetpoint(1500); // Target RPM
+AutoTunePID motorPID(0.0f, 255.0f, TuningMethod::CohenCoon);
+motorPID.setSetpoint(1500.0f); // Target RPM
 
 // In loop:
 float currentRPM = measureMotorRPM();
 motorPID.update(currentRPM);
-analogWrite(motorPin, motorPID.getOutput());
+analogWrite(motorPin, static_cast<int>(motorPID.getOutput()));
 ```
 
 ### Position Control
 
 ```cpp
+using namespace atp;
+
 // Servo position control
-AutoTunePID servoPID(0, 180, TuningMethod::Manual);
-servoPID.setManualGains(1.2, 0.1, 0.05);
-servoPID.setSetpoint(90); // Target angle
+AutoTunePID servoPID(0.0f, 180.0f, TuningMethod::Manual);
+servoPID.setManualGains(1.2f, 0.1f, 0.05f);
+servoPID.setSetpoint(90.0f); // Target angle
 
 // In loop:
 float currentAngle = readServoPosition();
 servoPID.update(currentAngle);
-servo.write(pid.getOutput());
+servo.write(static_cast<int>(servoPID.getOutput()));
 ```
 
 ## Next Steps

@@ -29,13 +29,15 @@ To initialize the `AutoTunePID` controller, you need to specify the **minimum an
 ### Example
 
 ```cpp
-#include "AutoTunePID.h"
+#include <AutoTunePID.h>
+
+using namespace atp;
 
 // Create an instance of AutoTunePID with a specified output range
-AutoTunePID pidController(0, 255, TuningMethod::ZieglerNichols);
+AutoTunePID pidController(0.0f, 255.0f, TuningMethod::ZieglerNichols);
 ```
 
-In this example, the `pidController` is configured to output values between **0 and 255** using the **Ziegler-Nichols** tuning method.
+In this example, the `pidController` is configured to output values between **0.0 and 255.0** using the **Ziegler-Nichols** tuning method.
 
 ---
 
@@ -46,10 +48,10 @@ The **setpoint** represents the target value that the system aims to achieve. Us
 ### Example
 
 ```cpp
-pidController.setSetpoint(100.0); // Set the target value to 100
+pidController.setSetpoint(100.0f); // Set the target value to 100.0
 ```
 
-This sets the desired system state to a value of **100**.
+This sets the desired system state to a value of **100.0**.
 
 ---
 
@@ -81,7 +83,7 @@ If you prefer **manual tuning**, set the PID gains directly using `setManualGain
 ### Example
 
 ```cpp
-pidController.setManualGains(1.0, 0.5, 0.1); // Set Kp, Ki, and Kd
+pidController.setManualGains(1.0f, 0.5f, 0.1f); // Set Kp, Ki, and Kd
 ```
 
 This allows precise control over the **proportional**, **integral**, and **derivative gains**.
@@ -98,8 +100,8 @@ This allows precise control over the **proportional**, **integral**, and **deriv
 ### Example
 
 ```cpp
-pidController.enableInputFilter(0.2); // Apply input smoothing with alpha = 0.2
-pidController.enableOutputFilter(0.3); // Apply output smoothing with alpha = 0.3
+pidController.enableInputFilter(0.2f); // Apply input smoothing with alpha = 0.2
+pidController.enableOutputFilter(0.3f); // Apply output smoothing with alpha = 0.3
 ```
 
 These functions improve stability in systems prone to noise.
@@ -113,7 +115,7 @@ These functions improve stability in systems prone to noise.
 ### Example
 
 ```cpp
-pidController.enableAntiWindup(true, 0.8); // Enable anti-windup with 80% threshold
+pidController.enableAntiWindup(true, 0.8f); // Enable anti-windup with 80% threshold
 ```
 
 This ensures the integral term is constrained when the output approaches its limits.
@@ -128,11 +130,11 @@ The `update()` function processes the **current input** and calculates the appro
 
 ```cpp
 void loop() {
-    float sensorValue = analogRead(A0); // Read sensor input
+    float sensorValue = static_cast<float>(analogRead(A0)); // Read sensor input
     pidController.update(sensorValue);
 
     float output = pidController.getOutput();
-    analogWrite(3, output); // Send output to the actuator
+    analogWrite(3, static_cast<int>(output)); // Send output to the actuator
 }
 ```
 
@@ -198,6 +200,8 @@ The library supports **multiple operational modes** to adapt the PID controller'
 The **Reverse mode** is specifically designed for cooling applications where you want to activate cooling when the measured value exceeds the setpoint:
 
 ```cpp
+using namespace atp;
+
 // For cooling systems (e.g., Peltier cells, refrigeration)
 pid.setOperationalMode(OperationalMode::Reverse);
 ```
@@ -208,18 +212,20 @@ pid.setOperationalMode(OperationalMode::Reverse);
 - When `input = setpoint`: Error is **zero** → Cooling deactivated
 
 **Example:** Temperature control at 12°C
-- Temp = 15°C: Error = 15-12 = +3 → **COOLING ON**
-- Temp = 10°C: Error = 10-12 = -2 → **COOLING OFF**
-- Temp = 12°C: Error = 0 → **COOLING OFF**
+- Temp = 15.0°C: Error = 15-12 = +3 → **COOLING ON**
+- Temp = 10.0°C: Error = 10-12 = -2 → **COOLING OFF**
+- Temp = 12.0°C: Error = 0 → **COOLING OFF**
 
 ### Manual Mode for Direct Control
 
 The **Manual mode** allows direct control of the output without PID calculations:
 
 ```cpp
+using namespace atp;
+
 // Switch to manual control
 pid.setOperationalMode(OperationalMode::Manual);
-pid.setManualOutput(75.0); // Set output to 75%
+pid.setManualOutput(75.0f); // Set output to 75%
 
 // In the control loop:
 pid.update(currentInput); // This will output 75% regardless of input
@@ -236,13 +242,15 @@ pid.update(currentInput); // This will output 75% regardless of input
 The **Override mode** provides emergency override with a fixed output value:
 
 ```cpp
+using namespace atp;
+
 // Emergency shutdown - set output to minimum
 pid.setOperationalMode(OperationalMode::Override);
-pid.setOverrideOutput(0.0); // Force output to 0
+pid.setOverrideOutput(0.0f); // Force output to 0
 
 // Safety valve activation - set output to maximum
 pid.setOperationalMode(OperationalMode::Override);
-pid.setOverrideOutput(100.0); // Force output to maximum
+pid.setOverrideOutput(100.0f); // Force output to maximum
 ```
 
 **Use cases:**
@@ -255,16 +263,18 @@ pid.setOverrideOutput(100.0); // Force output to maximum
 The **Track mode** makes the output follow a reference signal:
 
 ```cpp
+using namespace atp;
+
 // Startup sequence - gradually increase output
 pid.setOperationalMode(OperationalMode::Track);
-for(float ref = 0; ref <= 100; ref += 10) {
+for(float ref = 0.0f; ref <= 100.0f; ref += 10.0f) {
     pid.setTrackReference(ref);
     pid.update(currentInput); // Output follows reference
     delay(1000);
 }
 
 // Shutdown sequence - gradually decrease output
-for(float ref = 100; ref >= 0; ref -= 10) {
+for(float ref = 100.0f; ref >= 0.0f; ref -= 10.0f) {
     pid.setTrackReference(ref);
     pid.update(currentInput); // Output follows reference
     delay(1000);
@@ -279,6 +289,8 @@ for(float ref = 100; ref >= 0; ref -= 10) {
 ### Example
 
 ```cpp
+using namespace atp;
+
 pidController.setOperationalMode(OperationalMode::Tune); // Set mode to Tune for auto-tuning
 ```
 
@@ -303,6 +315,8 @@ You can also set the **number of oscillation steps** for auto-tuning. The defaul
 ### Example
 
 ```cpp
+using namespace atp;
+
 pidController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
 pidController.setOscillationSteps(15); // Set custom oscillation steps (default is 20 for Half mode)
 ```
@@ -318,8 +332,10 @@ For **IMC** and **Lambda Tuning** methods, you can configure the **lambda parame
 ### Example
 
 ```cpp
+using namespace atp;
+
 pidController.setTuningMethod(TuningMethod::LambdaTuning);
-pidController.setLambda(0.5); // Set lambda parameter for Lambda Tuning
+pidController.setLambda(0.5f); // Set lambda parameter for Lambda Tuning
 ```
 
 This sets the lambda parameter to **0.5**, which provides a balanced trade-off between speed and robustness.
@@ -331,13 +347,16 @@ This sets the lambda parameter to **0.5**, which provides a balanced trade-off b
 ### 1. Ziegler-Nichols Example: Temperature Control
 
 ```cpp
-#include "AutoTunePID.h"
-AutoTunePID tempController(0, 255, TuningMethod::ZieglerNichols);
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID tempController(0.0f, 255.0f, TuningMethod::ZieglerNichols);
 
 void setup() {
-    tempController.setSetpoint(75.0); // Target temperature
-    tempController.enableInputFilter(0.1); // Enable input filtering
-    tempController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    tempController.setSetpoint(75.0f); // Target temperature
+    tempController.enableInputFilter(0.1f); // Enable input filtering
+    tempController.enableAntiWindup(true, 0.8f); // Enable anti-windup
     tempController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
     tempController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -345,7 +364,7 @@ void setup() {
 void loop() {
     float temp = readTemperature(); // Read temperature sensor
     tempController.update(temp); // Update PID controller
-    analogWrite(HEATER_PIN, tempController.getOutput()); // Control heater
+    analogWrite(HEATER_PIN, static_cast<int>(tempController.getOutput())); // Control heater
     delay(100);
 }
 ```
@@ -353,13 +372,16 @@ void loop() {
 ### 2. Cohen-Coon Example: Motor Speed Control
 
 ```cpp
-#include "AutoTunePID.h"
-AutoTunePID motorController(0, 255, TuningMethod::CohenCoon);
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID motorController(0.0f, 255.0f, TuningMethod::CohenCoon);
 
 void setup() {
-    motorController.setSetpoint(1500); // Target RPM
-    motorController.enableInputFilter(0.2); // Enable input filtering
-    motorController.enableAntiWindup(true, 0.7); // Enable anti-windup
+    motorController.setSetpoint(1500.0f); // Target RPM
+    motorController.enableInputFilter(0.2f); // Enable input filtering
+    motorController.enableAntiWindup(true, 0.7f); // Enable anti-windup
     motorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
     motorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -367,7 +389,7 @@ void setup() {
 void loop() {
     float rpm = readEncoderSpeed(); // Read motor speed
     motorController.update(rpm); // Update PID controller
-    analogWrite(MOTOR_PIN, motorController.getOutput()); // Control motor
+    analogWrite(MOTOR_PIN, static_cast<int>(motorController.getOutput())); // Control motor
     delay(100);
 }
 ```
@@ -375,14 +397,17 @@ void loop() {
 ### 3. IMC Example: Pressure Control
 
 ```cpp
-#include "AutoTunePID.h"
-AutoTunePID pressureController(0, 255, TuningMethod::IMC);
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID pressureController(0.0f, 255.0f, TuningMethod::IMC);
 
 void setup() {
-    pressureController.setSetpoint(100.0); // Target pressure
-    pressureController.enableInputFilter(0.1); // Enable input filtering
-    pressureController.enableAntiWindup(true, 0.8); // Enable anti-windup
-    pressureController.setLambda(0.5); // Set lambda parameter for robustness
+    pressureController.setSetpoint(100.0f); // Target pressure
+    pressureController.enableInputFilter(0.1f); // Enable input filtering
+    pressureController.enableAntiWindup(true, 0.8f); // Enable anti-windup
+    pressureController.setLambda(0.5f); // Set lambda parameter for robustness
     pressureController.setOscillationMode(OscillationMode::Normal); // Set oscillation mode to Normal
     pressureController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -390,7 +415,7 @@ void setup() {
 void loop() {
     float pressure = readPressureSensor(); // Read pressure sensor
     pressureController.update(pressure); // Update PID controller
-    analogWrite(PUMP_PIN, pressureController.getOutput()); // Control pump
+    analogWrite(PUMP_PIN, static_cast<int>(pressureController.getOutput())); // Control pump
     delay(100);
 }
 ```
@@ -398,13 +423,16 @@ void loop() {
 ### 4. Tyreus-Luyben Example: Chemical Reactor Temperature Control
 
 ```cpp
-#include "AutoTunePID.h"
-AutoTunePID reactorController(0, 255, TuningMethod::TyreusLuyben);
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID reactorController(0.0f, 255.0f, TuningMethod::TyreusLuyben);
 
 void setup() {
-    reactorController.setSetpoint(80.0); // Target reactor temperature
-    reactorController.enableInputFilter(0.1); // Enable input filtering
-    reactorController.enableAntiWindup(true, 0.8); // Enable anti-windup
+    reactorController.setSetpoint(80.0f); // Target reactor temperature
+    reactorController.enableInputFilter(0.1f); // Enable input filtering
+    reactorController.enableAntiWindup(true, 0.8f); // Enable anti-windup
     reactorController.setOscillationMode(OscillationMode::Half); // Set oscillation mode to Half
     reactorController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -412,7 +440,7 @@ void setup() {
 void loop() {
     float temp = readReactorTemperature(); // Read reactor temperature
     reactorController.update(temp); // Update PID controller
-    analogWrite(HEATER_PIN, reactorController.getOutput()); // Control heater
+    analogWrite(HEATER_PIN, static_cast<int>(reactorController.getOutput())); // Control heater
     delay(100);
 }
 ```
@@ -420,14 +448,17 @@ void loop() {
 ### 5. Lambda Tuning Example: Flow Control
 
 ```cpp
-#include "AutoTunePID.h"
-AutoTunePID flowController(0, 255, TuningMethod::LambdaTuning);
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID flowController(0.0f, 255.0f, TuningMethod::LambdaTuning);
 
 void setup() {
-    flowController.setSetpoint(50.0); // Target flow rate
-    flowController.enableInputFilter(0.15); // Enable input filtering
-    flowController.enableAntiWindup(true, 0.9); // Enable anti-windup
-    flowController.setLambda(0.7); // Set lambda parameter for flow control
+    flowController.setSetpoint(50.0f); // Target flow rate
+    flowController.enableInputFilter(0.15f); // Enable input filtering
+    flowController.enableAntiWindup(true, 0.9f); // Enable anti-windup
+    flowController.setLambda(0.7f); // Set lambda parameter for flow control
     flowController.setOscillationMode(OscillationMode::Mild); // Set oscillation mode to Mild
     flowController.setOperationalMode(OperationalMode::Tune); // Set operational mode to Tune
 }
@@ -435,7 +466,7 @@ void setup() {
 void loop() {
     float flowRate = readFlowSensor(); // Read flow sensor
     flowController.update(flowRate); // Update PID controller
-    analogWrite(VALVE_PIN, flowController.getOutput()); // Control valve
+    analogWrite(VALVE_PIN, static_cast<int>(flowController.getOutput())); // Control valve
     delay(100);
 }
 ```
