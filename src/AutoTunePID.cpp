@@ -63,7 +63,9 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
 /** @brief Sets the controller setpoint. */
 void AutoTunePID::setSetpoint(float setpoint)
 {
-    _setpoint = setpoint;
+    if (isfinite(setpoint)) {
+        _setpoint = setpoint;
+    }
 }
 
 /** @brief Sets the auto-tuning method. */
@@ -197,6 +199,15 @@ void AutoTunePID::setLambda(float lambda)
 void AutoTunePID::update(float currentInput)
 {
     const uint32_t now = millis();
+
+    // BUG FIX: Prevent startup spike. Initialize state on first call.
+    if (_lastUpdate == 0U) {
+        _lastUpdate = now;
+        _previousError = (_operationalMode == OperationalMode::Reverse) ? (currentInput - _setpoint) : (_setpoint - currentInput);
+        _input = currentInput;
+        return;
+    }
+
     // Maintain consistent sample time (100ms)
     if ((now - _lastUpdate) < 100U) {
         return;

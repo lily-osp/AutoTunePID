@@ -69,10 +69,15 @@ void loop() {
 
     // Update speed measurement every 100ms
     if ((now - lastMillis) >= 100U) {
-        // Calculate RPM: (pulses in 100ms * 10 * 60) / pulses_per_rev
-        // Assuming 20 pulses per revolution for this example
-        float currentRPM = static_cast<float>(pulses * 600) / 20.0f;
+        // Atomic read of pulses to prevent race conditions on 8-bit AVR
+        noInterrupts();
+        uint32_t currentPulses = pulses;
         pulses = 0U;
+        interrupts();
+
+        // Calculate RPM: (currentPulses in 100ms * 10 * 60) / pulses_per_rev
+        // Assuming 20 pulses per revolution for this example
+        float currentRPM = static_cast<float>(currentPulses * 600) / 20.0f;
         lastMillis = now;
 
         // Update PID controller
