@@ -14,6 +14,8 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 6. [Manual Tuning Example with Filtering, Anti-Windup, and Oscillation Modes](#manual-tuning-example-with-filtering-anti-windup-and-oscillation-modes)
 7. [Booster Motor Speed Controller (High-Performance Example)](#booster-motor-speed-controller-high-performance-example)
 8. [Peltier Cooling Example with Reverse Mode](#peltier-cooling-example-with-reverse-mode)
+9. [Operational Modes Demonstration](#operational-modes-demonstration)
+10. [Delta Robot Joint Control (High-Precision Position)](#delta-robot-joint-control-high-precision-position)
 
 ---
 
@@ -404,6 +406,161 @@ void loop() {
 
 ---
 
+## Operational Modes Demonstration
+
+### System Flexibility and Control
+
+This example shows how to use all available operational modes to achieve system flexibility, including **Normal**, **Reverse**, **Manual**, **Override**, **Track**, **Hold**, and **Preserve** modes.
+
+#### Pin Configuration
+
+- **Input Pin**: A0 (Sensor Input)
+- **Output Pin**: 9 (PWM Control)
+
+#### Code
+
+```cpp
+#include <AutoTunePID.h>
+
+// Use the atp namespace
+using namespace atp;
+
+// Pin definitions
+const int sensorPin = A0;    // Analog input for process variable
+const int outputPin = 9;     // PWM output for control signal
+
+// PID controller instance
+AutoTunePID pid(0.0f, 255.0f, TuningMethod::ZieglerNichols);
+
+void setup() {
+    Serial.begin(9600);
+    pinMode(sensorPin, INPUT);
+    pinMode(outputPin, OUTPUT);
+
+    // Configure PID for normal operation
+    pid.setSetpoint(50.0f); // Target value of 50 (analog units)
+    pid.setManualGains(2.0f, 0.5f, 0.1f); // Sample PID gains
+}
+
+void loop() {
+    // Read process variable (0-1023 range)
+    float processVariable = static_cast<float>(analogRead(sensorPin)) * (100.0f / 1023.0f);
+
+    // Update PID controller
+    pid.update(processVariable);
+
+    // Get output and apply to control pin
+    float output = pid.getOutput();
+    analogWrite(outputPin, static_cast<int>(output));
+
+    // Handle serial commands to change modes (Simulated)
+    if (Serial.available()) {
+        char command = Serial.read();
+        switch(command) {
+            case 'n': pid.setOperationalMode(OperationalMode::Normal); break;
+            case 'r': pid.setOperationalMode(OperationalMode::Reverse); break;
+            case 'h': pid.setOperationalMode(OperationalMode::Hold); break;
+            // Additional modes can be set similarly
+        }
+    }
+    delay(100);
+}
+```
+
+---
+
+## Delta Robot Joint Control (High-Precision Position)
+
+### Handling Gearbox Friction and Inertia
+
+Controlling a Delta Robot joint presents a significant challenge due to **gearbox friction** and the varying **inertia** of the robot arm. This example utilizes the **Cohen-Coon** tuning method, which is particularly effective for systems with physical lag and friction. By using high-precision position control (in degrees) and specialized tuning, the system achieves smooth and accurate movements.
+
+#### Key Features
+- **Cohen-Coon Tuning**: Optimized for systems with significant dead time and friction.
+- **Position Control**: Direct mapping of encoder ticks to degrees.
+- **Mild Oscillation**: Safe auto-tuning within a restricted range (+/- 15 degrees).
+- **Bidirectional Output**: Handles motor direction and PWM for full range movement (-255 to 255).
+
+#### Pin Configuration
+
+- **Encoder Pin A**: 2 (Interrupt-capable)
+- **Encoder Pin B**: 3
+- **Motor PWM Pin**: 10
+- **Motor Dir Pin**: 7
+- **Setpoint**: 45.0°
+
+#### Code
+
+```cpp
+#include <AutoTunePID.h>
+
+// Use the atp namespace for AUTOSAR compliance
+using namespace atp;
+
+// Hardware Configuration
+const int ENCODER_PIN_A = 2;
+const int ENCODER_PIN_B = 3;
+const int MOTOR_PWM_PIN = 10;
+const int MOTOR_DIR_PIN = 7;
+
+// System Parameters
+const float PULSES_PER_DEGREE = 14.22f; 
+volatile int32_t encoderTicks = 0;
+float targetAngle = 45.0f;
+
+// PID Controller Instance
+// Range: -255.0 to 255.0 (Bidirectional PWM)
+// Method: CohenCoon (Excellent for high-inertia/friction robotic joints)
+AutoTunePID jointPID(-255.0f, 255.0f, TuningMethod::CohenCoon);
+
+void handleEncoder() {
+    if (digitalRead(ENCODER_PIN_B) == HIGH) {
+        encoderTicks++;
+    } else {
+        encoderTicks--;
+    }
+}
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(ENCODER_PIN_A, INPUT_PULLUP);
+    pinMode(ENCODER_PIN_B, INPUT_PULLUP);
+    pinMode(MOTOR_PWM_PIN, OUTPUT);
+    pinMode(MOTOR_DIR_PIN, OUTPUT);
+    attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), handleEncoder, RISING);
+
+    jointPID.setSetpoint(targetAngle);
+    jointPID.enableInputFilter(0.15f);      // Smooth out noisy encoder pulses
+    jointPID.enableAntiWindup(true, 0.85f); // Prevent integral runaway
+    jointPID.setOscillationMode(OscillationMode::Mild); // Safety: restricted range
+    jointPID.setOperationalMode(OperationalMode::Tune); // Find best gains for friction
+}
+
+void loop() {
+    static uint32_t lastLoop = 0U;
+    uint32_t now = millis();
+
+    if ((now - lastLoop) >= 100U) {
+        lastLoop = now;
+        float currentAngle = static_cast<float>(encoderTicks) / PULSES_PER_DEGREE;
+
+        jointPID.update(currentAngle);
+        float pidOutput = jointPID.getOutput();
+        
+        // Handle bidirectional motor driver
+        if (pidOutput >= 0.0f) {
+            digitalWrite(MOTOR_DIR_PIN, HIGH);
+            analogWrite(MOTOR_PWM_PIN, static_cast<int>(pidOutput));
+        } else {
+            digitalWrite(MOTOR_DIR_PIN, LOW);
+            analogWrite(MOTOR_PWM_PIN, static_cast<int>(fabsf(pidOutput)));
+        }
+    }
+}
+```
+
+---
+
 ## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
 | Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint         | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
@@ -416,5 +573,7 @@ void loop() {
 | **Manual Tuning**   | Generic Control System       | A0        | 12         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
 | **Booster Motor**   | High-Speed Speed Booster     | 2 (Enc)   | 9          | 1500.0 RPM       | 0.2              | N/A               | 90%                   | Half             | Tune             |
 | **Reverse Mode**    | Peltier Cooling              | A0        | 9          | 12.0°C           | 0.1              | N/A               | 80%                   | N/A              | Reverse          |
+| **Ziegler-Nichols** | Operational Modes Demo       | A0        | 9          | 50.0 Units       | N/A              | N/A               | N/A                   | N/A              | Multiple         |
+| **Cohen-Coon**      | Delta Robot Joint Position   | 2 (Enc)   | 10         | 45.0 Degrees     | 0.15             | N/A               | 85%                   | Mild             | Tune             |
 
 ---

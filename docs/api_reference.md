@@ -31,6 +31,9 @@ AutoTunePID pid(0, 255, TuningMethod::ZieglerNichols);
 
 // Servo control (0-180 degrees)
 AutoTunePID servoPID(0, 180, TuningMethod::CohenCoon);
+
+// High-precision position control (-255 to 255 bidirectional)
+AutoTunePID robotJointPID(-255, 255, TuningMethod::CohenCoon);
 ```
 
 ## Configuration Methods

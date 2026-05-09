@@ -35,6 +35,9 @@ using namespace atp;
 
 // Create an instance of AutoTunePID with a specified output range
 AutoTunePID pidController(0.0f, 255.0f, TuningMethod::ZieglerNichols);
+
+// For high-precision bidirectional position control (-255 to 255 range)
+AutoTunePID robotJointPID(-255.0f, 255.0f, TuningMethod::CohenCoon);
 ```
 
 In this example, the `pidController` is configured to output values between **0.0 and 255.0** using the **Ziegler-Nichols** tuning method.
