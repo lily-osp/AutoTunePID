@@ -206,13 +206,8 @@ void AutoTunePID::update(float currentInput)
             _error = _setpoint - _input;
         }
 
-        // Numerical integration with deadband
-        if (fabsf(_error) < 0.001f) {
-            // Keep current integral, don't reset to zero to avoid steady-state error
-            // but don't accumulate if error is extremely small
-        } else {
-            _integral += _error * dt;
-        }
+        // Numerical integration
+        _integral += _error * dt;
 
         // Numerical differentiation
         _derivative = (_error - _previousError) / dt;
