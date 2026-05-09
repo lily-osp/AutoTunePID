@@ -9,6 +9,8 @@
 
 #include <Arduino.h>
 #include <stdint.h>
+#include <cfloat>
+#include <cmath>
 
 /**
  * @namespace atp
@@ -154,13 +156,13 @@ public:
 
     /**
      * @brief Sets the number of oscillations for tuning.
-     * @param steps Number of steps (must be > 0).
+     * @param steps Number of steps (must be > 0 and <= 1000).
      */
     void setOscillationSteps(int32_t steps);
 
     /**
      * @brief Sets the lambda parameter for Lambda/IMC tuning.
-     * @param lambda The desired closed-loop time constant.
+     * @param lambda The desired closed-loop time constant (must be > 0).
      */
     void setLambda(float lambda);
 
@@ -244,6 +246,7 @@ private:
     float _maxInput;         /**< Peak input during oscillation */
     float _minInput;         /**< Valley input during oscillation */
     uint32_t _lastPeakTime;  /**< Time of last peak for period calculation */
+    bool _tuneInProgress;    /**< Flag to track if tuning is active (for static reset) */
 
     // Derived Process Parameters
     float _processTimeConstant; /**< Estimated system time constant (T) */
