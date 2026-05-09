@@ -38,9 +38,9 @@ The Ziegler-Nichols method is one of the oldest and most widely used tuning appr
    - Measure and note the ultimate gain ($K_u$) and ultimate period ($T_u$).
 4. **Calculate PID Gains:**
    - Use the following formulas to calculate the PID parameters:
-     $$ K_p = 0.6 \cdot K_u $$
-     $$ K_i = \frac{2.0 \cdot K_p}{T_u} $$
-     $$ K_d = 0.125 \cdot K_p \cdot T_u $$
+     $ K_p = 0.6 \cdot K_u $
+     $ K_i = \frac{2.0 \cdot K_p}{T_u} $
+     $ K_d = 0.125 \cdot K_p \cdot T_u $
 
 ### Strengths
 
@@ -80,9 +80,9 @@ The Cohen-Coon method is tailored for systems with measurable dead time. It assu
    - Measure the ultimate gain ($K_u$) and ultimate period ($T_u$).
 2. **Calculate PID Gains:**
    - Use the following formulas (simplified but effective):
-     $$ K_p = 0.8 \cdot K_u $$
-     $$ K_i = \frac{K_p}{0.8 \cdot T_u} $$
-     $$ K_d = 0.194 \cdot K_p \cdot T_u $$
+     $ K_p = 0.8 \cdot K_u $
+     $ K_i = \frac{K_p}{0.8 \cdot T_u} $
+     $ K_d = 0.194 \cdot K_p \cdot T_u $
 
 ### Strengths
 
@@ -271,13 +271,13 @@ Manual tuning offers complete control over the PID parameters (‘Kp’, ‘Ki�
 
 ## Comparison Table
 
-| Algorithm            | Complexity    | Tuning Speed | Tuning Requirements                                                                             | Simple Explanation                                   | Pros                                                                  | Cons                                                               | Best Use-Case                                      |
-| -------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------- |
-| **Ziegler-Nichols**  | Moderate      | Fast         | Stable system, ability to induce critical oscillations.                                         | Uses critical oscillation to set PID parameters.     | Easy to implement, quick results, good starting point.                | Can lead to aggressive tuning, overshoot, unsuitable for delays.   | Oscillatory systems with consistent dynamics.      |
-| **Cohen-Coon**       | Moderate      | Fast         | Stable system, ability to induce oscillations.                                               | Uses oscillation data for smoother PID tuning.       | Handles dead time well, provides smoother responses than Z-N.         | May be less aggressive than Z-N, requires oscillation test.          | Systems needing smoother response than Z-N.         |
-| **IMC-Based Tuning** | Moderate      | Moderate     | Process time constant, dead time, and desired robustness parameter.                           | Balances robustness and performance with λ parameter.| Highly robust, handles dead time, user-adjustable tuning.             | Requires process parameter estimation, moderate complexity.           | Dead-time systems needing robustness control.       |
-| **Tyreus-Luyben**    | Moderate      | Moderate     | Stable system, ability to measure ultimate gain and period.                                     | Minimizes overshoot and improves stability.          | Robust, minimal overshoot, suitable for stability-focused systems.    | No derivative action, requires accurate Ku and Tu measurements.    | Systems requiring minimal overshoot and stability. |
-| **Lambda Tuning**    | Moderate-High | Moderate     | Measurable dead time (\( L \)) and process time constant (\( T \)).                             | Balances response speed and robustness.              | Handles dead time effectively, adjustable for performance needs.      | Requires accurate \( T \) and \( L \) measurements.                | Systems with significant dead time.                |
-| **Manual Tuning**    | Low-High      | Variable     | Expertise in PID control, time for iterative adjustments, system tolerance for gradual changes. | Adjusts parameters manually through trial and error. | Fully customizable, works for unique dynamics, no assumptions needed. | Time-intensive, prone to errors, results depend on user expertise. | Unique or challenging system dynamics.             |
+| Algorithm            | Complexity    | Tuning Speed | Tuning Requirements                                                                             | Simple Explanation                                    | Pros                                                                  | Cons                                                               | Best Use-Case                                      |
+| -------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------- |
+| **Ziegler-Nichols**  | Moderate      | Fast         | Stable system, ability to induce critical oscillations.                                         | Uses critical oscillation to set PID parameters.      | Easy to implement, quick results, good starting point.                | Can lead to aggressive tuning, overshoot, unsuitable for delays.   | Oscillatory systems with consistent dynamics.      |
+| **Cohen-Coon**       | Moderate      | Fast         | Stable system, ability to induce oscillations.                                                  | Uses oscillation data for smoother PID tuning.        | Handles dead time well, provides smoother responses than Z-N.         | May be less aggressive than Z-N, requires oscillation test.        | Systems needing smoother response than Z-N.        |
+| **IMC-Based Tuning** | Moderate      | Moderate     | Process time constant, dead time, and desired robustness parameter.                             | Balances robustness and performance with λ parameter. | Highly robust, handles dead time, user-adjustable tuning.             | Requires process parameter estimation, moderate complexity.        | Dead-time systems needing robustness control.      |
+| **Tyreus-Luyben**    | Moderate      | Moderate     | Stable system, ability to measure ultimate gain and period.                                     | Minimizes overshoot and improves stability.           | Robust, minimal overshoot, suitable for stability-focused systems.    | No derivative action, requires accurate Ku and Tu measurements.    | Systems requiring minimal overshoot and stability. |
+| **Lambda Tuning**    | Moderate-High | Moderate     | Measurable dead time (\( L \)) and process time constant (\( T \)).                             | Balances response speed and robustness.               | Handles dead time effectively, adjustable for performance needs.      | Requires accurate \( T \) and \( L \) measurements.                | Systems with significant dead time.                |
+| **Manual Tuning**    | Low-High      | Variable     | Expertise in PID control, time for iterative adjustments, system tolerance for gradual changes. | Adjusts parameters manually through trial and error.  | Fully customizable, works for unique dynamics, no assumptions needed. | Time-intensive, prone to errors, results depend on user expertise. | Unique or challenging system dynamics.             |
 
 ---

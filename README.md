@@ -63,6 +63,7 @@ A robust, feature-rich PID control library for Arduino that implements advanced 
 ---
 
 ## Minimum Requirements
+
 Due to the library's high-precision calculations and strict **AUTOSAR C++14** compliance (which utilizes 32-bit fixed-width types and namespace encapsulation), it is recommended to use an **Arduino Mega 2560** or more powerful boards (e.g., SAMD, ESP32, STM32). While it may compile for Arduino Uno, memory and processing overhead might impact real-time performance.
 
 ---
@@ -171,38 +172,38 @@ The library implements five distinct auto-tuning algorithms:
    
    - Oscillates the system to determine $K_u$ and $T_u$ based on output extremes.
    - Calculates PID gains:
-     $$ K_p = 0.6 \cdot K_u $$
-     $$ K_i = \frac{2.0 \cdot K_p}{T_u} $$
-     $$ K_d = 0.125 \cdot K_p \cdot T_u $$
+     $ K_p = 0.6 \cdot K_u $
+     $ K_i = \frac{2.0 \cdot K_p}{T_u} $
+     $ K_d = 0.125 \cdot K_p \cdot T_u $
 
 2. **Cohen-Coon**:
    
    - Alternative multipliers provide better transient response.
    - Gains are calculated as:
-     $$ K_p = 0.8 \cdot K_u $$
-     $$ K_i = \frac{K_p}{0.8 \cdot T_u} $$
-     $$ K_d = 0.194 \cdot K_p \cdot T_u $$
+     $ K_p = 0.8 \cdot K_u $
+     $ K_i = \frac{K_p}{0.8 \cdot T_u} $
+     $ K_d = 0.194 \cdot K_p \cdot T_u $
 
 3. **IMC (Internal Model Control)**:
    
    - Incorporates a smoothing factor ($\lambda$) to adjust response speed:
-     $$ K_p = \frac{T}{\lambda + L} $$
-     $$ K_i = \frac{K_p}{T} $$
-     $$ K_d = \frac{K_p \cdot L}{2} $$
+     $ K_p = \frac{T}{\lambda + L} $
+     $ K_i = \frac{K_p}{T} $
+     $ K_d = \frac{K_p \cdot L}{2} $
 
 4. **Tyreus-Luyben**:
    
    - Provides robust tuning with minimal overshoot:
-     $$ K_p = \frac{K_u}{2.2} $$
-     $$ K_i = \frac{K_p}{2.2 \cdot T_u} $$
-     $$ K_d = \frac{K_p \cdot T_u}{6.3} $$
+     $ K_p = \frac{K_u}{2.2} $
+     $ K_i = \frac{K_p}{2.2 \cdot T_u} $
+     $ K_d = \frac{K_p \cdot T_u}{6.3} $
 
 5. **Lambda Tuning (CLD)**:
    
    - Optimizes systems with significant dead time:
-     $$ K_p = \frac{T}{\lambda + L} $$
-     $$ K_i = \frac{K_p}{T} $$
-     $$ K_d = 0.5 \cdot K_p \cdot L $$
+     $ K_p = \frac{T}{\lambda + L} $
+     $ K_i = \frac{K_p}{T} $
+     $ K_d = 0.5 \cdot K_p \cdot L $
 
 ---
 
@@ -210,7 +211,7 @@ The library implements five distinct auto-tuning algorithms:
 
 Filters smooth inputs and outputs using an exponential moving average:
 
-- $$ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) $$
+- $ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) $
 - $\alpha$: Responsiveness of the filter (range: 0.01–1.0).
 
 ---
@@ -364,18 +365,22 @@ void loop() {
 This repository uses GitHub Actions to automatically create releases with Arduino library ZIP files:
 
 #### Automatic Release Creation
+
 - **Tag-based releases**: Push a version tag (e.g., `v1.2.3`) to automatically create a release
 - **Manual releases**: Use the "Manual Release Creation" workflow in GitHub Actions
 - **Release validation**: All releases are validated for proper Arduino library structure
 
 #### Release Assets
+
 Each release includes:
+
 - **`AutoTunePID-x.x.x.zip`**: Arduino library ZIP file for IDE installation
 - Complete library structure optimized for Arduino IDE Library Manager
 
 ### Installation Methods
 
 #### Method 1: Arduino IDE (Recommended)
+
 1. Go to [Releases](https://github.com/lily-osp/AutoTunePID/releases)
 2. Download the latest `AutoTunePID-x.x.x.zip` file
 3. Open Arduino IDE
@@ -384,6 +389,7 @@ Each release includes:
 6. Restart Arduino IDE
 
 #### Method 2: Manual Installation
+
 1. Download and extract the ZIP file
 2. Copy the `AutoTunePID` folder to your Arduino libraries directory:
    - Windows: `Documents\Arduino\libraries\`
@@ -392,6 +398,7 @@ Each release includes:
 3. Restart Arduino IDE
 
 #### Method 3: Arduino CLI
+
 ```bash
 arduino-cli lib install --zip-path AutoTunePID-x.x.x.zip
 ```
@@ -399,21 +406,26 @@ arduino-cli lib install --zip-path AutoTunePID-x.x.x.zip
 ### Development Workflow
 
 #### For Contributors
+
 1. **Validation**: All pushes are automatically validated for proper library structure
 2. **Testing**: Examples are compiled to ensure functionality
 3. **Releases**: Use GitHub Actions workflows for consistent releases
 
 #### Creating a New Release
+
 1. Update `version` in `library.properties`
 2. Commit the change
 3. Create and push a version tag: `git tag v1.2.3 && git push origin v1.2.3`
 4. GitHub Actions will automatically create the release with ZIP file
 
 #### Local Testing
+
 Before releasing, test the ZIP creation locally:
+
 ```bash
 ./create_release_zip.sh
 ```
+
 This creates the same ZIP structure that GitHub Actions will generate.
 
 ---

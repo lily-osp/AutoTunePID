@@ -21,6 +21,7 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _oscillationSteps(10)
     , _setpoint(0.0f)
     , _lambda(0.5f)
+    , _reverseMode(false)
     , _manualOutput(0.0f)
     , _overrideOutput(0.0f)
     , _trackReference(0.0f)
@@ -34,14 +35,18 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _output(0.0f)
     , _input(0.0f)
     , _antiWindupEnabled(true)
-    , _integralWindupThreshold(0.8f * (maxOutput - minOutput))
+    , _integralWindupThreshold(0.8f * fabsf(maxOutput - minOutput))
     , _lastUpdate(0U)
     , _ultimateGain(0.0f)
     , _oscillationPeriod(0.0f)
-    , _maxInput(-FLT_MAX / 2.0f)
-    , _minInput(FLT_MAX / 2.0f)
+    , _maxInput(-FLT_MAX)
+    , _minInput(FLT_MAX)
     , _lastPeakTime(0U)
     , _tuneInProgress(false)
+    , _outputState(true)
+    , _halfCycleCount(0)
+    , _lastCrossingTime(0U)
+    , _peakAmplitudeSum(0.0f)
     , _processTimeConstant(0.0f)
     , _deadTime(0.0f)
     , _integralTime(0.0f)
@@ -93,7 +98,7 @@ void AutoTunePID::enableOutputFilter(float alpha)
 void AutoTunePID::enableAntiWindup(bool enable, float threshold)
 {
     _antiWindupEnabled = enable;
-    // BUG FIX #6: Use fabs to prevent sign reversal when maxOutput < minOutput
+    // Use fabsf to prevent sign reversal when maxOutput < minOutput
     _integralWindupThreshold = threshold * fabsf(_maxOutput - _minOutput);
 }
 
@@ -101,16 +106,28 @@ void AutoTunePID::enableAntiWindup(bool enable, float threshold)
 void AutoTunePID::setOperationalMode(OperationalMode mode)
 {
     _operationalMode = mode;
+    
+    // Track reverse mode for error direction branching
+    if (mode == OperationalMode::Reverse) {
+        _reverseMode = true;
+    } else if (mode == OperationalMode::Normal) {
+        _reverseMode = false;
+    }
+
     if (mode == OperationalMode::Hold) {
         _integral = 0.0f;
         _previousError = 0.0f;
         _output = 0.0f;
     }
-    // BUG FIX #3: Reset static variables when entering Tune mode
     else if (mode == OperationalMode::Tune) {
+        // Reset state variables when re-entering TUNE mode
         _tuneInProgress = true;
-        _maxInput = -FLT_MAX / 2.0f;
-        _minInput = FLT_MAX / 2.0f;
+        _outputState = true;
+        _halfCycleCount = 0;
+        _lastCrossingTime = 0U;
+        _peakAmplitudeSum = 0.0f;
+        _maxInput = -FLT_MAX;
+        _minInput = FLT_MAX;
         _oscillationPeriod = 0.0f;
         _ultimateGain = 0.0f;
     } else {
@@ -168,8 +185,8 @@ void AutoTunePID::setOscillationSteps(int32_t steps)
 /** @brief Sets lambda for IMC/Lambda tuning. */
 void AutoTunePID::setLambda(float lambda)
 {
-    // BUG FIX #9: Validate lambda is positive and normal
-    if (lambda > 0.0f && std::isnormal(lambda)) {
+    // Validate lambda is positive and finite
+    if (lambda > 0.0f && isfinite(lambda)) {
         _lambda = lambda;
     } else {
         _lambda = 0.5f;  // Safe default
@@ -188,7 +205,7 @@ void AutoTunePID::update(float currentInput)
     float dt = static_cast<float>(now - _lastUpdate) / 1000.0f;
     _lastUpdate = now;
 
-    // BUG FIX #1: Guard against division by zero in derivative calculation
+    // Guard against division by zero in derivative calculation
     if (dt < 0.001f) {
         dt = 0.001f;  // Minimum 1ms delta
     }
@@ -203,7 +220,7 @@ void AutoTunePID::update(float currentInput)
     if (_operationalMode == OperationalMode::Tune) {
         performAutoTune(currentInput);
     } else if (_operationalMode == OperationalMode::Manual) {
-        // BUG FIX #5: Replace integer map() with float-based formula for precision
+        // High-precision float-based formula for Manual mode
         _output = _minOutput + (_manualOutput / 100.0f) * (_maxOutput - _minOutput);
         _output = constrain(_output, _minOutput, _maxOutput);
         return;
@@ -216,26 +233,16 @@ void AutoTunePID::update(float currentInput)
     } else if (_operationalMode == OperationalMode::Hold) {
         return;
     } else if (_operationalMode == OperationalMode::Preserve) {
-        // BUG FIX #4: Correct logic error - check mode BEFORE entering Preserve block
-        const bool isReverse = (_operationalMode == OperationalMode::Reverse);
-        if (isReverse) {
+        // Correct error direction branching based on persistent reverse mode flag
+        if (_reverseMode) {
             _error = _input - _setpoint;
         } else {
             _error = _setpoint - _input;
         }
         return;
-    } else if (_operationalMode == OperationalMode::Auto) {
-        // TODO: Implement automatic mode selection based on system behavior
-        // For now, fall through to Normal mode
-        _error = _setpoint - _input;
-        _integral += _error * dt;
-        _derivative = (_error - _previousError) / dt;
-        computePID();
-        applyAntiWindup();
-        _previousError = _error;
     } else {
-        // Normal or Reverse PID modes
-        if (_operationalMode == OperationalMode::Reverse) {
+        // Normal, Reverse, or Auto PID modes
+        if (_operationalMode == OperationalMode::Reverse || (_operationalMode == OperationalMode::Auto && _reverseMode)) {
             _error = _input - _setpoint;
         } else {
             _error = _setpoint - _input;
@@ -261,20 +268,6 @@ void AutoTunePID::update(float currentInput)
 /** @brief Internal auto-tune relay logic. */
 void AutoTunePID::performAutoTune(float currentInput)
 {
-    static bool outputState = true;
-    static int32_t halfCycleCount = 0;
-    static uint32_t lastCrossingTime = 0U;
-    static float peakAmplitudeSum = 0.0f;
-
-    // BUG FIX #3: Reset statics when tuning restarts (flag set in setOperationalMode)
-    if (!_tuneInProgress) {
-        outputState = true;
-        halfCycleCount = 0;
-        lastCrossingTime = 0U;
-        peakAmplitudeSum = 0.0f;
-        _tuneInProgress = true;
-    }
-
     const uint32_t currentTime = millis();
 
     float highOutput;
@@ -309,23 +302,23 @@ void AutoTunePID::performAutoTune(float currentInput)
 
     // Relay toggle on setpoint crossing
     bool crossed = false;
-    if (outputState && (currentInput > _setpoint)) {
-        outputState = false;
+    if (_outputState && (currentInput > _setpoint)) {
+        _outputState = false;
         crossed = true;
-    } else if (!outputState && (currentInput < _setpoint)) {
-        outputState = true;
+    } else if (!_outputState && (currentInput < _setpoint)) {
+        _outputState = true;
         crossed = true;
     }
 
-    _output = outputState ? highOutput : lowOutput;
+    _output = _outputState ? highOutput : lowOutput;
 
     if (crossed) {
-        if (halfCycleCount > 0) {
+        if (_halfCycleCount > 0) {
             // Calculate period from half-cycle
-            uint32_t duration = currentTime - lastCrossingTime;
+            const uint32_t duration = currentTime - _lastCrossingTime;
             
-            // BUG FIX #2: Guard against division by zero when crossings happen in same millisecond
-            if (duration > 0) {
+            // Guard against division by zero when crossings happen in same millisecond
+            if (duration > 0U) {
                 _oscillationPeriod = (2.0f * static_cast<float>(duration)) / 1000.0f;
             } else {
                 _oscillationPeriod = 0.1f;  // Fallback minimum period
@@ -334,20 +327,20 @@ void AutoTunePID::performAutoTune(float currentInput)
             // Accumulate amplitude: a = (peak - valley) / 2
             const float currentAmplitude = (_maxInput - _minInput) / 2.0f;
             if (currentAmplitude > 0.001f) {
-                peakAmplitudeSum += currentAmplitude;
+                _peakAmplitudeSum += currentAmplitude;
             }
         }
         
-        lastCrossingTime = currentTime;
-        halfCycleCount++;
+        _lastCrossingTime = currentTime;
+        _halfCycleCount++;
         
         // Reset peak/valley tracking for next half-cycle
-        _maxInput = -FLT_MAX / 2.0f;
-        _minInput = FLT_MAX / 2.0f;
+        _maxInput = -FLT_MAX;
+        _minInput = FLT_MAX;
 
         // End of tuning cycle
-        if (halfCycleCount >= _oscillationSteps) {
-            const float avgAmplitude = peakAmplitudeSum / static_cast<float>(halfCycleCount - 1);
+        if (_halfCycleCount >= _oscillationSteps) {
+            const float avgAmplitude = _peakAmplitudeSum / static_cast<float>(_halfCycleCount - 1);
             const float relayAmplitude = (highOutput - lowOutput) / 2.0f;
             
             if (avgAmplitude > 0.001f) {
@@ -377,8 +370,8 @@ void AutoTunePID::performAutoTune(float currentInput)
                 break;
             }
 
-            halfCycleCount = 0;
-            peakAmplitudeSum = 0.0f;
+            _halfCycleCount = 0;
+            _peakAmplitudeSum = 0.0f;
             _tuneInProgress = false;
             _operationalMode = OperationalMode::Normal;
         }
@@ -388,8 +381,8 @@ void AutoTunePID::performAutoTune(float currentInput)
 /** @brief Gains using Ziegler-Nichols Ultimate Period method. */
 void AutoTunePID::calculateZieglerNicholsGains()
 {
-    // Guard against division by zero (BUG FIX #2)
-    if (_oscillationPeriod > 0.0f) {
+    // Guard against division by zero
+    if (_oscillationPeriod > 0.001f) {
         // Standard ZN rules for PID: Kp = 0.6*Ku, Ti = 0.5*Tu, Td = 0.125*Tu
         _kp = 0.6f * _ultimateGain;
         _ki = (2.0f * _kp) / _oscillationPeriod;
@@ -402,8 +395,8 @@ void AutoTunePID::calculateZieglerNicholsGains()
 /** @brief Gains using Cohen-Coon empirical rules. */
 void AutoTunePID::calculateCohenCoonGains()
 {
-    // Guard against division by zero (BUG FIX #2)
-    if (_oscillationPeriod > 0.0f) {
+    // Guard against division by zero
+    if (_oscillationPeriod > 0.001f) {
         // Estimating process gain K. For relay oscillation: a = (4*d*K)/(pi*sqrt(1+(wT)^2))
         _kp = 0.8f * _ultimateGain;
         _ki = _kp / (0.8f * _oscillationPeriod);
@@ -426,7 +419,7 @@ void AutoTunePID::calculateIMCGains()
     }
 
     // Guard against division by zero
-    if (_processTimeConstant > 0.0f && (lambda + _deadTime) > 0.0f) {
+    if ((_processTimeConstant > 0.001f) && ((lambda + _deadTime) > 0.001f)) {
         // IMC for FOPDT: Kp = T / (K*(lambda + L))
         _kp = _processTimeConstant / (lambda + _deadTime);
         _ki = _kp / _processTimeConstant;
@@ -439,8 +432,8 @@ void AutoTunePID::calculateIMCGains()
 /** @brief Gains using Tyreus-Luyben conservative rules. */
 void AutoTunePID::calculateTyreusLuybenGains()
 {
-    // Guard against division by zero (BUG FIX #2)
-    if (_oscillationPeriod > 0.0f) {
+    // Guard against division by zero
+    if (_oscillationPeriod > 0.001f) {
         // Tyreus-Luyben: Kp = Ku / 2.2, Ti = 2.2 * Tu, Td = Tu / 6.3
         _kp = _ultimateGain / 2.2f;
         _ki = _kp / (2.2f * _oscillationPeriod);
@@ -456,14 +449,15 @@ void AutoTunePID::calculateLambdaTuningGains()
     _processTimeConstant = 0.67f * _oscillationPeriod;
     _deadTime = 0.17f * _oscillationPeriod;
     
-    if (_lambda <= 0.0f) {
-        _lambda = 0.5f * _processTimeConstant;
+    float currentLambda = _lambda;
+    if (currentLambda <= 0.0f) {
+        currentLambda = 0.5f * _processTimeConstant;
     }
 
     // Guard against division by zero
-    if (_processTimeConstant > 0.0f && (_lambda + _deadTime) > 0.0f) {
+    if ((_processTimeConstant > 0.001f) && ((currentLambda + _deadTime) > 0.001f)) {
         // Kp = T / (K * (lambda + L))
-        _kp = _processTimeConstant / (_lambda + _deadTime);
+        _kp = _processTimeConstant / (currentLambda + _deadTime);
         _ki = _kp / _processTimeConstant;
         _kd = 0.5f * _kp * _deadTime;
     } else {
@@ -485,7 +479,7 @@ void AutoTunePID::computePID()
 /** @brief Prevents integral windup based on threshold. */
 void AutoTunePID::applyAntiWindup()
 {
-    if (_antiWindupEnabled && (abs(_integral) > _integralWindupThreshold)) {
+    if (_antiWindupEnabled && (fabsf(_integral) > _integralWindupThreshold)) {
         _integral = constrain(_integral, -_integralWindupThreshold, _integralWindupThreshold);
     }
 }
@@ -493,9 +487,20 @@ void AutoTunePID::applyAntiWindup()
 /** @brief Generic exponential moving average filter. */
 float AutoTunePID::computeFilteredValue(float input, float& filteredValue, float alpha) const
 {
-    // BUG FIX #7: Clamp filter output to prevent numerical overflow and instability
-    filteredValue = (alpha * input) + ((1.0f - alpha) * filteredValue);
+    // Bound checks for input stability
+    if (!isfinite(input)) {
+        return filteredValue;
+    }
+
+    // Clamp alpha to safe range
+    const float safeAlpha = constrain(alpha, 0.0f, 1.0f);
+
+    // Exponential moving average formula
+    filteredValue = (safeAlpha * input) + ((1.0f - safeAlpha) * filteredValue);
+    
+    // Clamp filter output to prevented numerical overflow and maintain consistency with output range
     filteredValue = constrain(filteredValue, _minOutput, _maxOutput);
+    
     return filteredValue;
 }
 

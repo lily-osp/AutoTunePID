@@ -9,8 +9,8 @@
 
 #include <Arduino.h>
 #include <stdint.h>
-#include <cfloat>
-#include <cmath>
+#include <float.h>
+#include <math.h>
 
 /**
  * @namespace atp
@@ -218,6 +218,7 @@ private:
     int32_t _oscillationSteps;      /**< Number of tuning oscillations */
     float _setpoint;                /**< Target value */
     float _lambda;                  /**< Lambda parameter for IMC/Lambda tuning */
+    bool _reverseMode;              /**< Flag to track if system is in reverse mode (cooling) */
 
     // Operational parameters
     float _manualOutput;   /**< User-defined output in Manual mode */
@@ -247,6 +248,12 @@ private:
     float _minInput;         /**< Valley input during oscillation */
     uint32_t _lastPeakTime;  /**< Time of last peak for period calculation */
     bool _tuneInProgress;    /**< Flag to track if tuning is active (for static reset) */
+
+    // Tuning State (Persistent)
+    bool _outputState;          /**< Current relay state (high/low) */
+    int32_t _halfCycleCount;    /**< Counter for setpoint crossings */
+    uint32_t _lastCrossingTime; /**< Timestamp of last crossing */
+    float _peakAmplitudeSum;    /**< Sum of amplitudes for averaging */
 
     // Derived Process Parameters
     float _processTimeConstant; /**< Estimated system time constant (T) */

@@ -17,11 +17,11 @@ This document contains the complete mathematical formulas used by each PID tunin
 
 ### Formula:
 
-$$ K_p = 0.6 \cdot K_u $$
+$ K_p = 0.6 \cdot K_u $
 
-$$ K_i = \frac{2.0 \cdot K_p}{T_u} $$
+$ K_i = \frac{2.0 \cdot K_p}{T_u} $
 
-$$ K_d = 0.125 \cdot K_p \cdot T_u $$
+$ K_d = 0.125 \cdot K_p \cdot T_u $
 
 ---
 
@@ -29,11 +29,11 @@ $$ K_d = 0.125 \cdot K_p \cdot T_u $$
 
 ### Formula:
 
-$$ K_p = 0.8 \cdot K_u $$
+$ K_p = 0.8 \cdot K_u $
 
-$$ K_i = \frac{K_p}{0.8 \cdot T_u} $$
+$ K_i = \frac{K_p}{0.8 \cdot T_u} $
 
-$$ K_d = 0.194 \cdot K_p \cdot T_u $$
+$ K_d = 0.194 \cdot K_p \cdot T_u $
 
 ---
 
@@ -41,13 +41,14 @@ $$ K_d = 0.194 \cdot K_p \cdot T_u $$
 
 ### Formula:
 
-$$ K_p = \frac{T}{\lambda + L} $$
+$ K_p = \frac{T}{\lambda + L} $
 
-$$ K_i = \frac{K_p}{T} $$
+$ K_i = \frac{K_p}{T} $
 
-$$ K_d = \frac{K_p \cdot L}{2} $$
+$ K_d = \frac{K_p \cdot L}{2} $
 
 Where:
+
 - $ T $: Process time constant
 - $ L $: Dead time
 - $ \lambda $: Tuning parameter (configurable)
@@ -58,11 +59,11 @@ Where:
 
 ### Formula:
 
-$$ K_p = \frac{K_u}{2.2} $$
+$ K_p = \frac{K_u}{2.2} $
 
-$$ K_i = \frac{K_p}{2.2 \cdot T_u} $$
+$ K_i = \frac{K_p}{2.2 \cdot T_u} $
 
-$$ K_d = \frac{K_p \cdot T_u}{6.3} $$
+$ K_d = \frac{K_p \cdot T_u}{6.3} $
 
 ---
 
@@ -70,13 +71,14 @@ $$ K_d = \frac{K_p \cdot T_u}{6.3} $$
 
 ### Formula:
 
-$$ K_p = \frac{T}{\lambda + L} $$
+$ K_p = \frac{T}{\lambda + L} $
 
-$$ K_i = \frac{K_p}{T} $$
+$ K_i = \frac{K_p}{T} $
 
-$$ K_d = 0.5 \cdot K_p \cdot L $$
+$ K_d = 0.5 \cdot K_p \cdot L $
 
 Where:
+
 - $ T $: Process time constant
 - $ L $: Dead time
 - $ \lambda $: Tuning parameter (configurable)
@@ -85,10 +87,16 @@ Where:
 
 ### **Key Notes**:
 
-1. **Ultimate Gain Calculation**: $$ K_u = \frac{4d}{\pi a} $$ where $ d $ is the relay amplitude and $ a $ is the oscillation amplitude.
-2. **Process Parameter Estimation**: $$ T \approx 0.67 \cdot T_u $$, $$ L \approx 0.17 \cdot T_u $$ where $ T_u $ is the oscillation period.
-3. **Time-Based Integration**: The integral term uses proper time steps: $$ \int e(t) \, dt \approx \sum e(t) \cdot \Delta t $$
-4. **Derivative Calculation**: Uses time-based derivative: $$ \frac{de(t)}{dt} \approx \frac{e(t) - e(t-1)}{\Delta t} $$
+1. **Ultimate Gain Calculation**: 
+    $ K_u = \frac{4d}{\pi a} $ 
+   where $ d $ is the relay amplitude and $ a $ is the oscillation amplitude.
+2. **Process Parameter Estimation**: 
+    $ T \approx 0.67 \cdot T_u $, $ L \approx 0.17 \cdot T_u $ 
+   where $ T_u $ is the oscillation period.
+3. **Time-Based Integration**: The integral term uses proper time steps: 
+    $ \int e(t) \, dt \approx \sum e(t) \cdot \Delta t $
+4. **Derivative Calculation**: Uses time-based derivative: 
+    $ \frac{de(t)}{dt} \approx \frac{e(t) - e(t-1)}{\Delta t} $
 5. All formulas are implemented in the **AutoTunePID library** for automatic calculation.
 
 ### **Implementation Details**
