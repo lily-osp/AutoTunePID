@@ -561,19 +561,148 @@ void loop() {
 
 ---
 
+## Cascade Pressure/Flow Control (Industrial Master/Slave)
+
+### Two-Stage Coordinated Control
+
+In complex industrial systems, a single PID loop may respond too slowly to supply-side disturbances. This example demonstrates **Cascade Control**, where two PID instances work in a master/slave relationship:
+1. **Master PID (Pressure)**: Monitors pipe pressure and calculates the required Flow Rate.
+2. **Slave PID (Flow)**: Monitors actual flow and calculates the Motor PWM to achieve the master's target flow rate.
+
+This pattern provides much faster response to pressure drops or pump fluctuations.
+
+#### Pin Configuration
+
+- **Pressure Sensor**: A0
+- **Flow Sensor**: A1
+- **Pump PWM**: 9
+- **Setpoint**: 50.0 PSI
+
+#### Code
+
+```cpp
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+// Master PID: Pressure Control (Input: PSI, Output: Target Flow LPM)
+AutoTunePID pressureMaster(0.0f, 100.0f, TuningMethod::IMC);
+
+// Slave PID: Flow Control (Input: LPM, Output: Pump PWM 0-255)
+AutoTunePID flowSlave(0.0f, 255.0f, TuningMethod::CohenCoon);
+
+void setup() {
+    pressureMaster.setSetpoint(50.0f);
+    pressureMaster.enableInputFilter(0.1f);
+    pressureMaster.enableAntiWindup(true, 0.8f);
+
+    flowSlave.enableInputFilter(0.2f);
+    flowSlave.enableAntiWindup(true, 0.9f);
+
+    flowSlave.setOperationalMode(OperationalMode::Normal);
+    pressureMaster.setOperationalMode(OperationalMode::Normal);
+}
+
+void loop() {
+    static uint32_t lastUpdate = 0U;
+    if ((millis() - lastUpdate) >= 100U) {
+        lastUpdate = millis();
+
+        float currentPressure = static_cast<float>(analogRead(A0)) * (100.0f / 1023.0f);
+        float currentFlow = static_cast<float>(analogRead(A1)) * (150.0f / 1023.0f);
+
+        // Master Loop
+        pressureMaster.update(currentPressure);
+        float targetFlow = pressureMaster.getOutput();
+
+        // Update Slave Setpoint and Loop
+        flowSlave.setSetpoint(targetFlow);
+        flowSlave.update(currentFlow);
+        
+        analogWrite(9, static_cast<int>(flowSlave.getOutput()));
+    }
+}
+```
+
+---
+
+## Smart CC/CV Battery Charger (State-Machine Integration)
+
+### High-Efficiency Power Management
+
+This example demonstrates a professional **Constant Current / Constant Voltage (CC/CV)** charger. It showcases how to transition between different PID controllers and operational modes:
+1. **CC Phase**: Uses a PID to maintain a constant 5A charging current.
+2. **CV Phase**: Once the battery reaches 14.4V, it switches to a Voltage PID.
+3. **Safety**: Uses `Override` mode for emergency shutoff and handles smooth handovers.
+
+#### Pin Configuration
+
+- **Voltage Sense**: A0 (0-20V range)
+- **Current Sense**: A1 (0-10A range)
+- **Charger PWM**: 9
+- **Target Voltage**: 14.4V
+
+#### Code
+
+```cpp
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+AutoTunePID ccPID(0.0f, 255.0f, TuningMethod::TyreusLuyben); // Current Limit
+AutoTunePID cvPID(0.0f, 255.0f, TuningMethod::IMC);          // Voltage Target
+
+enum class State { CC, CV, FULL };
+State chargerState = State::CC;
+
+void setup() {
+    ccPID.setSetpoint(5.0f); // 5 Amps
+    cvPID.setSetpoint(14.4f); // 14.4 Volts
+    ccPID.setOperationalMode(OperationalMode::Normal);
+}
+
+void loop() {
+    static uint32_t lastUpdate = 0U;
+    if ((millis() - lastUpdate) >= 100U) {
+        lastUpdate = millis();
+
+        float battV = static_cast<float>(analogRead(A0)) * (20.0f / 1023.0f);
+        float chargeI = static_cast<float>(analogRead(A1)) * (10.0f / 1023.0f);
+
+        if (chargerState == State::CC) {
+            ccPID.update(chargeI);
+            analogWrite(9, static_cast<int>(ccPID.getOutput()));
+            if (battV >= 14.4f) chargerState = State::CV;
+        } 
+        else if (chargerState == State::CV) {
+            cvPID.update(battV);
+            analogWrite(9, static_cast<int>(cvPID.getOutput()));
+            if (chargeI < 0.5f) {
+                chargerState = State::FULL;
+                analogWrite(9, 0);
+            }
+        }
+    }
+}
+```
+
+---
+
 ## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
-| Tuning Method       | Example Application          | Input Pin | Output Pin | Setpoint         | Input Filter (α) | Output Filter (α) | Anti-Windup Threshold | Oscillation Mode | Operational Mode |
-| ------------------- | ---------------------------- | --------- | ---------- | ---------------- | ---------------- | ----------------- | --------------------- | ---------------- | ---------------- |
-| **Ziegler-Nichols** | Temperature Control          | A0        | 3          | 75.0°C           | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
-| **Cohen-Coon**      | Motor Speed Control          | A0        | 5          | 1500 RPM         | 0.2              | 0.2               | 70%                   | Half             | Tune             |
-| **IMC**             | Pressure Control             | A0        | 9          | 100.0 kPa        | 0.1              | 0.1               | 80%                   | Normal           | Tune             |
-| **Tyreus-Luyben**   | Chemical Reactor Temperature | A0        | 10         | 80.0°C           | 0.1              | 0.1               | 80%                   | Half             | Tune             |
-| **Lambda Tuning**   | Flow Control                 | A0        | 11         | 50.0 L/min       | 0.15             | 0.15              | 90%                   | Mild             | Tune             |
-| **Manual Tuning**   | Generic Control System       | A0        | 12         | 50.0 (Arbitrary) | 0.1              | 0.1               | 80%                   | Normal           | Normal           |
-| **Booster Motor**   | High-Speed Speed Booster     | 2 (Enc)   | 9          | 1500.0 RPM       | 0.2              | N/A               | 90%                   | Half             | Tune             |
-| **Reverse Mode**    | Peltier Cooling              | A0        | 9          | 12.0°C           | 0.1              | N/A               | 80%                   | N/A              | Reverse          |
-| **Ziegler-Nichols** | Operational Modes Demo       | A0        | 9          | 50.0 Units       | N/A              | N/A               | N/A                   | N/A              | Multiple         |
-| **Cohen-Coon**      | Delta Robot Joint Position   | 2 (Enc)   | 10         | 45.0 Degrees     | 0.15             | N/A               | 85%                   | Mild             | Tune             |
+| Tuning Method | Example Application | Input Pin | Output Pin | Setpoint | Filter (α) | Anti-Windup | Mode |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Ziegler-Nichols** | Temperature Control | A0 | 3 | 75.0°C | 0.1 | 80% | Tune |
+| **Cohen-Coon** | Motor Speed Control | A0 | 5 | 1500 RPM | 0.2 | 70% | Tune |
+| **IMC** | Pressure Control | A0 | 9 | 100.0 kPa | 0.1 | 80% | Tune |
+| **Tyreus-Luyben** | Reactor Temperature | A0 | 10 | 80.0°C | 0.1 | 80% | Tune |
+| **Lambda Tuning** | Flow Control | A0 | 11 | 50.0 L/min | 0.15 | 90% | Tune |
+| **Manual Tuning** | Generic System | A0 | 12 | 50.0 Unit | 0.1 | 80% | Normal |
+| **Booster Motor** | Motor Speed Booster | 2 (Enc) | 9 | 1500.0 RPM | 0.2 | 90% | Tune |
+| **Peltier Cooling**| Cooling (Reverse) | A0 | 9 | 12.0°C | 0.1 | 80% | Reverse |
+| **Ziegler-Nichols** | Operational Modes | A0 | 9 | 50.0 Unit | N/A | N/A | Multiple |
+| **Cohen-Coon** | Delta Robot Joint | 2 (Enc) | 10 | 45.0 Deg | 0.15 | 85% | Tune |
+| **Cascade Control**| Pressure/Flow | A0, A1 | 9 | 50.0 PSI | 0.1, 0.2 | 80%, 90% | Normal |
+| **CC/CV Charger** | Battery Charger | A0, A1 | 9 | 14.4V, 5A | N/A | 85%, 90% | CC/CV |
 
 ---

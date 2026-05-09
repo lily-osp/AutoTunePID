@@ -322,6 +322,14 @@ enum class OscillationMode {
 };
 ```
 
+## Advanced Control Patterns
+
+### Cascade PID Control
+The library supports cascade control architectures by passing the output of a Master PID instance to the setpoint of a Slave PID instance. This is recommended for systems with multiple time constants or significant transport delays.
+
+### CC/CV Logic
+Coordinated use of multiple PID instances with `OperationalMode` switching enables professional battery charging and power supply profiles.
+
 ## Error Codes and Troubleshooting
 
 ### Common Issues

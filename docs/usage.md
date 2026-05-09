@@ -345,6 +345,27 @@ This sets the lambda parameter to **0.5**, which provides a balanced trade-off b
 
 ---
 
+## Advanced Control Patterns
+
+The `AutoTunePID` library's modular design allows for advanced control strategies beyond single-loop PID.
+
+### Cascade Control
+
+Cascade control uses two PID controllers where the **Master** loop's output becomes the **Slave** loop's setpoint. This is highly effective for processes with significant dead time or those subject to frequent supply-side disturbances (e.g., pressure fluctuations in a flow control system).
+
+```cpp
+// Master loop (Pressure) -> Slave loop (Flow)
+pressureMaster.update(currentPressure);
+flowSlave.setSetpoint(pressureMaster.getOutput());
+flowSlave.update(currentFlow);
+```
+
+### CC/CV Charging
+
+By combining state machines with multiple PID instances, you can implement **Constant Current / Constant Voltage** charging profiles. Use `setOperationalMode(OperationalMode::Override)` to safely transition between loops or shut down the system.
+
+---
+
 ## Example Sketches
 
 ### 1. Ziegler-Nichols Example: Temperature Control
