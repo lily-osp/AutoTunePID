@@ -1,61 +1,55 @@
 # AutoTunePID — Project Roadmap & TODO
 
-This document tracks the evolution of `AutoTunePID` from a hobbyist-level library to an industrial-grade, deterministic, and safety-critical embedded control system.
+This document tracks the evolution of `AutoTunePID` towards becoming a robust, high-performance, and safety-aware control library for general microcontrollers.
 
-## Design Principles
-- **Deterministic Behavior:** Predictable execution time and control logic.
-- **Explicit Runtime Semantics:** No hidden timing or state dependencies.
-- **Zero Dynamic Allocation:** Absolute ban on `malloc`, `new`, and heap usage.
-- **Platform-Agnostic Core:** Decoupled from framework-specific headers (e.g., `Arduino.h`).
-- **Embedded-First:** Optimized for constrained MCUs and RTOS environments.
+## 🎯 Design Principles
+- **Predictable Behavior:** Ensure control logic executes consistently across different MCU architectures.
+- **Explicit Runtime Semantics:** Make state changes and operational limits clear to the user.
+- **Zero Dynamic Allocation:** Absolute ban on `malloc`, `new`, and heap usage for stability.
+- **Embedded-First:** Optimized for constrained MCUs (AVR, ESP, STM32) without demanding RTOS architectures initially.
 
 ---
 
-## P0 — Core Stability & Control Correctness
+## 🔥 P0 — Core Stability & Control Refinement
 
-### Deterministic Runtime
-- [ ] **Explicit Delta-Time API:** Transition from internal `millis()` to dependency-injected intervals.
-  - *Target:* `pid.update(input, dt_us);`
-  - *Goal:* Ensure ISR and RTOS safety; remove framework coupling.
-- [ ] **Resource Characterization:** Document worst-case execution time (WCET), stack depth, and flash footprint.
-- [ ] **Compile-Time Validation:** Use `static_assert` to validate gain ranges and configuration parameters.
-
-### Control Logic Refinement
-- [ ] **Derivative-on-Measurement:** Implement $D = -K_d \cdot \frac{d(Measurement)}{dt}$ to eliminate "derivative kick" during setpoint changes.
+### Control Logic Upgrades
+- [ ] **Derivative-on-Measurement:** Implement $D = -K_d \cdot \frac{d(Measurement)}{dt}$ to eliminate "derivative kick" when the setpoint is changed abruptly.
+- [ ] **Output Slew-Rate Limiting:** Protect actuators (motors, valves) by constraining the maximum rate of change ($du/dt$) of the output.
 - [ ] **Advanced Anti-Windup:** Implement configurable modes:
-  - Clamping (conditional integration).
-  - Back-calculation for smoother saturation recovery.
-- [ ] **Numerical Safety Guards:** Integrated detection for `NaN`, `Inf`, and arithmetic overflows.
-  - *Interface:* `PIDFault get_last_fault() noexcept;`
-- [ ] **Output Slew-Rate Limiting:** Protect actuators by constraining the maximum rate of change ($du/dt$).
+  - Clamping (conditional integration) to replace simple limiters.
+  - Back-calculation for smoother recovery from saturation.
 
 ### Autotuner Reliability
-- [ ] **Relay-Feedback Model:** Rebuild the tuner around a robust relay-feedback mechanism with hysteresis.
-- [ ] **Tuning State Machine:** Implement an explicit state machine:
+- [ ] **Relay-Feedback Model with Hysteresis:** Rebuild the tuner around a robust relay-feedback mechanism that includes noise-rejecting hysteresis.
+- [ ] **Tuning State Machine:** Implement an explicit state machine for the auto-tuning process:
   - `IDLE` → `EXCITATION` → `OSCILLATION_DETECT` → `CALCULATING` → `COMPLETED` / `FAULT`.
-- [ ] **Plant-Class Presets:** Provide heuristics for specific plant types (Thermal, High-Inertia Motor, Fluid Dynamics).
+- [ ] **Plant-Class Presets:** Provide heuristics or starting parameters for specific plant types (Thermal, High-Inertia Motor, Fluid Dynamics).
+
+### Numerical Safety
+- [ ] **Comprehensive Safety Guards:** Integrated detection for `NaN`, `Inf`, and arithmetic overflows throughout the PID math.
+  - *Interface:* `PIDFault get_last_fault() noexcept;`
 
 ---
 
-## P1 — Architecture & Observability
+## 🏗️ P1 — Advanced Features & Observability
 
-### Modular Decoupling
-- [ ] **Strict Directory Separation:**
-  - `core/` (Logic), `tuning/` (Optional), `filters/` (Pluggable), `platform/` (Hardware Abstraction).
-- [ ] **Strong Type Safety:** Replace remaining magic integers with scoped `enum class` configurations.
-- [ ] **Template-Driven Configuration:** Use policy-based design for features like filtering to avoid virtual dispatch overhead.
+### Flexibility
+- [ ] **Explicit Delta-Time API (Overload):** Add `pid.update(input, dt_us)` alongside the standard `update(input)` to allow advanced users to inject deterministic timing (e.g., from an ISR) while keeping the standard API simple.
+- [ ] **Feedforward Support:** Add a direct feedforward injection point: `output = pid_calc + feedforward;`.
+- [ ] **Gain Scheduling:** Enable runtime switching of PID constants based on operating regions.
 
 ### Diagnostics
-- [ ] **Telemetry Interface:** Expose internal terms ($P, I, D$) and saturation states without coupling to `Serial`.
-- [ ] **Trace-Level Instrumentation:** Add `ATPID_ENABLE_TRACE` macros for deep debugging.
+- [ ] **Telemetry Interface:** Expose internal terms ($P, I, D$) and saturation states via getter methods for user-defined logging (decoupled from `Serial`).
+- [ ] **Trace-Level Instrumentation:** Add optional `ATPID_ENABLE_TRACE` macros for deep debugging.
 
 ---
 
-## P2 — Engineering Excellence
+## 🛡️ P2 — Architecture & Engineering Excellence
 
-### Signal Integrity
-- [ ] **Adaptive Filtering:** Replace static EMA with $dt$-aware low-pass filters for derivative and input signals.
-- [ ] **Fixed-Point Support:** Provide a template specialization for fixed-point arithmetic (e.g., Q16.16) for MCUs lacking an FPU.
+### Modular Decoupling
+- [ ] **Platform-Agnostic Core:** Decouple from framework-specific headers (e.g., `Arduino.h`) to support bare-metal STM32 or other environments.
+- [ ] **Strict Directory Separation:** Organize into `core/` (Logic), `tuning/` (Optional), `filters/` (Pluggable), `platform/` (Hardware Abstraction).
+- [ ] **Strong Type Safety:** Replace remaining magic integers with scoped `enum class` configurations.
 
 ### Verification
 - [ ] **Simulated Plant Regression:** CI suite testing against modeled first-order and second-order systems.
@@ -63,14 +57,6 @@ This document tracks the evolution of `AutoTunePID` from a hobbyist-level librar
 
 ---
 
-## P3 — Advanced Features
-- [ ] **Feedforward Support:** Add a direct feedforward injection point: `output = pid_calc + feedforward;`.
-- [ ] **Gain Scheduling:** Enable runtime switching of PID constants based on operating regions.
-- [ ] **Cascaded Controller Support:** Simplify the wiring of nested loops.
-
----
-
-## Documentation Requirements
-- [ ] **Architecture Manifesto:** Explain the shift to deterministic engineering.
-- [ ] **Timing Guide:** Best practices for loop frequency and jitter mitigation.
-- [ ] **Failure Catalog:** Visual guide to troubleshooting issues like integral runaway.
+## 📝 Documentation Requirements
+- [ ] **Timing Guide:** Best practices for loop frequency and jitter mitigation on standard MCUs.
+- [ ] **Failure Catalog:** Visual guide to troubleshooting issues like integral runaway or noise amplification.
