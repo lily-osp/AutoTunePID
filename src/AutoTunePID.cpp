@@ -57,6 +57,8 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _outputFilteredValue(0.0f)
     , _inputFilterAlpha(0.1f)
     , _outputFilterAlpha(0.1f)
+    , _outputSlewRate(0.0f)
+    , _previousOutput(0.0f)
 {
 }
 
@@ -89,11 +91,21 @@ void AutoTunePID::enableInputFilter(float alpha)
     _inputFilterAlpha = constrain(alpha, 0.01f, 1.0f);
 }
 
-/** @brief Configures output filtering. */
+/** @brief Enables and configures the output filter. */
 void AutoTunePID::enableOutputFilter(float alpha)
 {
     _outputFilterEnabled = true;
     _outputFilterAlpha = constrain(alpha, 0.01f, 1.0f);
+}
+
+/** @brief Configures output slew-rate limiting to protect actuators. */
+void AutoTunePID::setOutputSlewRate(float maxRatePerSecond)
+{
+    if (maxRatePerSecond > 0.0f && isfinite(maxRatePerSecond)) {
+        _outputSlewRate = maxRatePerSecond;
+    } else {
+        _outputSlewRate = 0.0f; // Disable
+    }
 }
 
 /** @brief Configures anti-windup protection. */
@@ -282,6 +294,21 @@ void AutoTunePID::update(float currentInput, float dt)
     if (_outputFilterEnabled && (_operationalMode != OperationalMode::Tune)) {
         _output = computeFilteredValue(_output, _outputFilteredValue, _outputFilterAlpha);
     }
+
+    // Apply Slew-Rate Limiting if enabled
+    if (_outputSlewRate > 0.0f && (_operationalMode != OperationalMode::Tune)) {
+        float maxChange = _outputSlewRate * dt;
+        float actualChange = _output - _previousOutput;
+        
+        if (actualChange > maxChange) {
+            _output = _previousOutput + maxChange;
+        } else if (actualChange < -maxChange) {
+            _output = _previousOutput - maxChange;
+        }
+    }
+    
+    // Store final output for the next cycle
+    _previousOutput = _output;
 }
 
 /** @brief Internal auto-tune relay logic. */

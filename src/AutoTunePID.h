@@ -118,6 +118,12 @@ public:
     void enableOutputFilter(float alpha);
 
     /**
+     * @brief Configures output slew-rate limiting to protect actuators.
+     * @param maxRatePerSecond Maximum allowed change in output units per second. Set to 0.0f to disable.
+     */
+    void setOutputSlewRate(float maxRatePerSecond);
+
+    /**
      * @brief Configures anti-windup protection.
      * @param enable Whether to enable protection.
      * @param threshold Integral limit factor (default: 0.8).
@@ -275,6 +281,8 @@ private:
     float _outputFilteredValue; /**< State of output filter */
     float _inputFilterAlpha;    /**< Input filter responsiveness */
     float _outputFilterAlpha;   /**< Output filter responsiveness */
+    float _outputSlewRate;      /**< Maximum allowed output change per second */
+    float _previousOutput;      /**< Output from the previous update cycle */
 
     // Constants
     static constexpr float kPi = 3.14159265f; /**< PI constant for calculations */
