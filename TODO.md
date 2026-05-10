@@ -13,7 +13,7 @@ This document tracks the evolution of `AutoTunePID` towards becoming a robust, h
 ## 🔥 P0 — Core Stability & Control Refinement
 
 ### Control Logic Upgrades
-- [ ] **Derivative-on-Measurement:** Implement $D = -K_d \cdot \frac{d(Measurement)}{dt}$ to eliminate "derivative kick" when the setpoint is changed abruptly.
+- [x] **Derivative-on-Measurement:** Implement $D = -K_d \cdot \frac{d(Measurement)}{dt}$ to eliminate "derivative kick" when the setpoint is changed abruptly.
 - [ ] **Output Slew-Rate Limiting:** Protect actuators (motors, valves) by constraining the maximum rate of change ($du/dt$) of the output.
 - [ ] **Advanced Anti-Windup:** Implement configurable modes:
   - Clamping (conditional integration) to replace simple limiters.
