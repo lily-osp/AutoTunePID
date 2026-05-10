@@ -16,6 +16,9 @@ The `AutoTunePID` library is a powerful tool for adaptive PID control in Arduino
 8. [Peltier Cooling Example with Reverse Mode](#peltier-cooling-example-with-reverse-mode)
 9. [Operational Modes Demonstration](#operational-modes-demonstration)
 10. [Delta Robot Joint Control (High-Precision Position)](#delta-robot-joint-control-high-precision-position)
+11. [Cascade Pressure/Flow Control (Industrial Master/Slave)](#cascade-pressureflow-control-industrial-masterslave)
+12. [Smart CC/CV Battery Charger (State-Machine Integration)](#smart-cccv-battery-charger-state-machine-integration)
+13. [Deterministic RTOS / Timer Interrupt Control](#deterministic-rtos--timer-interrupt-control)
 
 ---
 
@@ -688,6 +691,90 @@ void loop() {
 
 ---
 
+## Deterministic RTOS / Timer Interrupt Control
+
+### Explicit Delta-Time API for Jitter-Free Execution
+
+Standard Arduino control loops using `millis()` can suffer from jitter due to other blocking tasks (e.g., Serial communication, displays). This example shows how to use the overloaded `update(input, dt)` method inside a hardware timer interrupt (or an RTOS task) to guarantee execution at a fixed interval, bypassing `millis()` entirely for true deterministic timing.
+
+#### Pin Configuration
+
+- **Input Pin**: A0 (Sensor)
+- **Output Pin**: 9 (Actuator)
+- **Setpoint**: 100.0
+
+#### Code
+
+```cpp
+#include <AutoTunePID.h>
+
+using namespace atp;
+
+// --- Hardware Configuration ---
+const int SENSOR_PIN = A0;
+const int ACTUATOR_PIN = 9;
+
+// --- PID Controller Instance ---
+AutoTunePID precisionPID(0.0f, 255.0f, TuningMethod::ZieglerNichols);
+
+// --- State Variables ---
+volatile float currentSensorValue = 0.0f;
+volatile float currentOutput = 0.0f;
+volatile bool newOutputAvailable = false;
+
+// 50ms interval (0.05 seconds)
+const float DT_SECONDS = 0.05f; 
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(ACTUATOR_PIN, OUTPUT);
+
+    precisionPID.setSetpoint(100.0f);
+    
+    // Setup Timer1 to fire an interrupt every 50ms (AVR specific example)
+    noInterrupts();
+    TCCR1A = 0;
+    TCCR1B = 0;
+    TCNT1  = 0;
+    OCR1A = 3125; // Compare match register for 50ms (20Hz) at 16MHz with 256 prescaler
+    TCCR1B |= (1 << WGM12); // CTC mode
+    TCCR1B |= (1 << CS12);  // 256 prescaler
+    TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
+    interrupts();
+
+    Serial.println("--- Deterministic RTOS/ISR Controller Started ---");
+}
+
+// Timer1 Interrupt Service Routine - Fires exactly every 50ms
+ISR(TIMER1_COMPA_vect) {
+    int rawVal = analogRead(SENSOR_PIN);
+    currentSensorValue = static_cast<float>(rawVal) * (200.0f / 1023.0f);
+
+    // Deterministic PID Update using explicit dt
+    precisionPID.update(currentSensorValue, DT_SECONDS);
+    
+    currentOutput = precisionPID.getOutput();
+    newOutputAvailable = true;
+}
+
+void loop() {
+    if (newOutputAvailable) {
+        noInterrupts();
+        float outputToApply = currentOutput;
+        float sensorToPrint = currentSensorValue;
+        newOutputAvailable = false;
+        interrupts();
+
+        analogWrite(ACTUATOR_PIN, static_cast<int>(outputToApply));
+
+        Serial.print("Sensor: "); Serial.print(sensorToPrint);
+        Serial.print(" | PWM: "); Serial.println(outputToApply);
+    }
+}
+```
+
+---
+
 ## Summary of Examples with Filtering, Anti-Windup, and Oscillation Modes
 
 | Tuning Method | Example Application | Input Pin | Output Pin | Setpoint | Filter (α) | Anti-Windup | Mode |
@@ -704,5 +791,6 @@ void loop() {
 | **Cohen-Coon** | Delta Robot Joint | 2 (Enc) | 10 | 45.0 Deg | 0.15 | 85% | Tune |
 | **Cascade Control**| Pressure/Flow | A0, A1 | 9 | 50.0 PSI | 0.1, 0.2 | 80%, 90% | Normal |
 | **CC/CV Charger** | Battery Charger | A0, A1 | 9 | 14.4V, 5A | N/A | 85%, 90% | CC/CV |
+| **Explicit dt API** | Deterministic RTOS/ISR | A0 | 9 | 100.0 | N/A | N/A | Normal |
 
 ---

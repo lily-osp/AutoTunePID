@@ -345,6 +345,37 @@ This sets the lambda parameter to **0.5**, which provides a balanced trade-off b
 
 ---
 
+## Advanced Usage: Deterministic Timing
+
+By default, the `update(input)` method uses the built-in Arduino `millis()` function to determine the time elapsed (`dt`) since the last call. While convenient, the main `loop()` can suffer from jitter if other tasks (like `Serial.print()` or delays) block execution.
+
+For high-performance or strict real-time environments, you can use the overloaded **Explicit Delta-Time API**, `update(input, dt)`. This bypasses `millis()` completely.
+
+### Standard vs. Deterministic
+
+**Standard Execution (Prone to Jitter):**
+```cpp
+void loop() {
+    float input = readSensor();
+    pid.update(input); // Uses millis() internally
+    
+    doHeavyTask(); // Causes variable delay, affecting PID accuracy
+}
+```
+
+**Deterministic Execution (Jitter-Free):**
+```cpp
+// ISR that fires exactly every 50ms (0.05 seconds)
+ISR(TIMER1_COMPA_vect) {
+    float input = readSensor();
+    pid.update(input, 0.05f); // Explicit dt passed in seconds
+}
+```
+
+This ensures the math core of the PID controller operates with perfect timing, which is crucial for systems that require high precision and stability.
+
+---
+
 ## Advanced Control Patterns
 
 The `AutoTunePID` library's modular design allows for advanced control strategies beyond single-loop PID.

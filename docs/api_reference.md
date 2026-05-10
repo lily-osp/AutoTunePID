@@ -180,7 +180,7 @@ pid.setTrackReference(150.0); // Track this value
 
 ### void update(float currentInput)
 
-Updates the PID controller with current process variable.
+Updates the PID controller with current process variable. Uses `millis()` internally to calculate the time delta.
 
 **Parameters:**
 - `currentInput` (float): Current process variable value
@@ -189,6 +189,21 @@ Updates the PID controller with current process variable.
 ```cpp
 float temperature = readTemperature();
 pid.update(temperature);
+```
+
+### void update(float currentInput, float dt)
+
+Updates the PID controller with an explicitly provided time delta. Intended for fixed-frequency environments like RTOS tasks or hardware timer interrupts. Bypasses `millis()` completely for deterministic execution.
+
+**Parameters:**
+- `currentInput` (float): Current process variable value
+- `dt` (float): Time elapsed since the last update, in seconds
+
+**Example:**
+```cpp
+// Inside a 50ms timer ISR
+float temperature = readTemperature();
+pid.update(temperature, 0.05f);
 ```
 
 ### float getOutput()
