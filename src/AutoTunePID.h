@@ -169,10 +169,17 @@ public:
     // --- Runtime Methods ---
 
     /**
-     * @brief Main processing loop for the PID controller.
+     * @brief Main processing loop for the PID controller (Standard internal timing).
      * @param currentInput The latest process measurement.
      */
     void update(float currentInput);
+
+    /**
+     * @brief Deterministic processing loop for RTOS or fixed-interval ISRs.
+     * @param currentInput The latest process measurement.
+     * @param dt The explicit delta-time in seconds since the last update.
+     */
+    void update(float currentInput, float dt);
 
     /** @return Current controller output. */
     float getOutput() const { return _output; }

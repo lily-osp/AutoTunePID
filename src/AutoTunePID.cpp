@@ -216,6 +216,13 @@ void AutoTunePID::update(float currentInput)
     float dt = static_cast<float>(now - _lastUpdate) / 1000.0f;
     _lastUpdate = now;
 
+    // Call the deterministic core logic
+    update(currentInput, dt);
+}
+
+/** @brief Deterministic processing loop for RTOS or fixed-interval ISRs. */
+void AutoTunePID::update(float currentInput, float dt)
+{
     // Guard against division by zero in derivative calculation
     if (dt < 0.001f) {
         dt = 0.001f;  // Minimum 1ms delta
