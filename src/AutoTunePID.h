@@ -230,7 +230,7 @@ private:
     float _ki;            /**< Integral gain */
     float _kd;            /**< Derivative gain */
     float _error;         /**< Current tracking error */
-    float _previousError; /**< Error from last update */
+    float _previousInput; /**< Input measurement from last update */
     float _integral;      /**< Accumulated integral term */
     float _derivative;    /**< Current derivative term */
     float _output;        /**< Final computed output */

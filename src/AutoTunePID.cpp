@@ -29,7 +29,7 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _ki(0.0f)
     , _kd(0.0f)
     , _error(0.0f)
-    , _previousError(0.0f)
+    , _previousInput(0.0f)
     , _integral(0.0f)
     , _derivative(0.0f)
     , _output(0.0f)
@@ -118,7 +118,7 @@ void AutoTunePID::setOperationalMode(OperationalMode mode)
 
     if (mode == OperationalMode::Hold) {
         _integral = 0.0f;
-        _previousError = 0.0f;
+        _previousInput = 0.0f;
         _output = 0.0f;
     }
     else if (mode == OperationalMode::Tune) {
@@ -203,7 +203,7 @@ void AutoTunePID::update(float currentInput)
     // BUG FIX: Prevent startup spike. Initialize state on first call.
     if (_lastUpdate == 0U) {
         _lastUpdate = now;
-        _previousError = (_operationalMode == OperationalMode::Reverse) ? (currentInput - _setpoint) : (_setpoint - currentInput);
+        _previousInput = currentInput;
         _input = currentInput;
         return;
     }
@@ -262,12 +262,13 @@ void AutoTunePID::update(float currentInput)
         // Numerical integration
         _integral += _error * dt;
 
-        // Numerical differentiation
-        _derivative = (_error - _previousError) / dt;
+        // Numerical differentiation (Derivative on Measurement)
+        // Using -d(Input)/dt prevents derivative kick on setpoint changes
+        _derivative = -(_input - _previousInput) / dt;
         
         computePID();
         applyAntiWindup();
-        _previousError = _error;
+        _previousInput = _input;
     }
 
     // Apply output filtering if enabled
