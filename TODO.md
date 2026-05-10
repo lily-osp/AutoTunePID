@@ -34,7 +34,7 @@ This document tracks the evolution of `AutoTunePID` towards becoming a robust, h
 ## 🏗️ P1 — Advanced Features & Observability
 
 ### Flexibility
-- [ ] **Explicit Delta-Time API (Overload):** Add `pid.update(input, dt_us)` alongside the standard `update(input)` to allow advanced users to inject deterministic timing (e.g., from an ISR) while keeping the standard API simple.
+- [x] **Explicit Delta-Time API (Overload):** Add `pid.update(input, dt_us)` alongside the standard `update(input)` to allow advanced users to inject deterministic timing (e.g., from an ISR) while keeping the standard API simple.
 - [ ] **Feedforward Support:** Add a direct feedforward injection point: `output = pid_calc + feedforward;`.
 - [ ] **Gain Scheduling:** Enable runtime switching of PID constants based on operating regions.
 
