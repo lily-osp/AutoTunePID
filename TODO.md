@@ -20,7 +20,7 @@ This document tracks the evolution of `AutoTunePID` towards becoming a robust, h
   - Back-calculation for smoother recovery from saturation.
 
 ### Autotuner Reliability
-- [ ] **Relay-Feedback Model with Hysteresis:** Rebuild the tuner around a robust relay-feedback mechanism that includes noise-rejecting hysteresis.
+- [x] **Relay-Feedback Model with Hysteresis:** Rebuild the tuner around a robust relay-feedback mechanism that includes noise-rejecting hysteresis.
 - [ ] **Tuning State Machine:** Implement an explicit state machine for the auto-tuning process:
   - `IDLE` → `EXCITATION` → `OSCILLATION_DETECT` → `CALCULATING` → `COMPLETED` / `FAULT`.
 - [ ] **Plant-Class Presets:** Provide heuristics or starting parameters for specific plant types (Thermal, High-Inertia Motor, Fluid Dynamics).
