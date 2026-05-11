@@ -172,6 +172,12 @@ public:
      */
     void setLambda(float lambda);
 
+    /**
+     * @brief Sets the hysteresis band for auto-tuning to reject noise.
+     * @param hysteresis Value in input units (e.g., degrees, PSI).
+     */
+    void setTuningHysteresis(float hysteresis);
+
     // --- Runtime Methods ---
 
     /**
@@ -231,6 +237,7 @@ private:
     int32_t _oscillationSteps;      /**< Number of tuning oscillations */
     float _setpoint;                /**< Target value */
     float _lambda;                  /**< Lambda parameter for IMC/Lambda tuning */
+    float _tuningHysteresis;        /**< Hysteresis band for relay toggle */
     bool _reverseMode;              /**< Flag to track if system is in reverse mode (cooling) */
 
     // Operational parameters

@@ -21,6 +21,7 @@ AutoTunePID::AutoTunePID(float minOutput, float maxOutput, TuningMethod method)
     , _oscillationSteps(10)
     , _setpoint(0.0f)
     , _lambda(0.5f)
+    , _tuningHysteresis(0.0f)
     , _reverseMode(false)
     , _manualOutput(0.0f)
     , _overrideOutput(0.0f)
@@ -207,6 +208,14 @@ void AutoTunePID::setLambda(float lambda)
     }
 }
 
+/** @brief Sets the hysteresis band for auto-tuning to reject noise. */
+void AutoTunePID::setTuningHysteresis(float hysteresis)
+{
+    if (hysteresis >= 0.0f && isfinite(hysteresis)) {
+        _tuningHysteresis = hysteresis;
+    }
+}
+
 /** @brief Main update loop with strict timing. */
 void AutoTunePID::update(float currentInput)
 {
@@ -346,12 +355,12 @@ void AutoTunePID::performAutoTune(float currentInput)
     if (currentInput > _maxInput) { _maxInput = currentInput; }
     if (currentInput < _minInput) { _minInput = currentInput; }
 
-    // Relay toggle on setpoint crossing
+    // Relay toggle on setpoint crossing with noise-rejecting hysteresis
     bool crossed = false;
-    if (_outputState && (currentInput > _setpoint)) {
+    if (_outputState && (currentInput > (_setpoint + _tuningHysteresis))) {
         _outputState = false;
         crossed = true;
-    } else if (!_outputState && (currentInput < _setpoint)) {
+    } else if (!_outputState && (currentInput < (_setpoint - _tuningHysteresis))) {
         _outputState = true;
         crossed = true;
     }
