@@ -1,5 +1,6 @@
 # AutoTunePID Library
 
+![Blotcat meticulously tuning a high-tech PID control box that emits a perfectly stable signal wave](assets/blotcat-hero.jpg)
 A robust, feature-rich PID control library for Arduino that implements advanced auto-tuning algorithms, signal filtering, anti-windup, and operational modes for flexible control.
 
 ---
@@ -166,6 +167,7 @@ float getSetpoint(); // Get the current setpoint
 
 ## Advanced Auto-Tuning Methods
 
+![Blotcat selecting the perfect tuning algorithm gear from a rack of precision tools](assets/blotcat-tuning.jpg)
 The library implements five distinct auto-tuning algorithms:
 
 1. **Ziegler-Nichols**:
@@ -209,6 +211,7 @@ The library implements five distinct auto-tuning algorithms:
 
 ## Signal Filtering
 
+![Blotcat holding a shield to block noise spikes and prevent windup pressure overflow](assets/blotcat-filtering.jpg)
 Filters smooth inputs and outputs using an exponential moving average:
 
 - $ \text{filteredValue} = (\alpha \cdot \text{input}) + ((1 - \alpha) \cdot \text{filteredValue}) $
