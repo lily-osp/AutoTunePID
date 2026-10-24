@@ -1,0 +1,17 @@
+# LaTeX build intermediates
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# harness binary
+sim/harness
+
+# NOTE: results/, figures/, and paper.pdf are intentionally tracked in this
+# bucket so the repository ships the released run's data and manuscript;
+# ./build.sh --sim regenerates all of them deterministically.

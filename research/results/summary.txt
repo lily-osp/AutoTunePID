@@ -1,0 +1,128 @@
+== Relay estimation accuracy (method independent) ==
+P1 Normal: Ku 24.1203 (true 16.3506, err 47.5198%) Tu 10.2 (true 7.70001, err 32.4674%) tune 51.1s ok=1
+P1 Half: Ku 24.0688 (true 16.3506, err 47.2046%) Tu 13.2 (true 7.70001, err 71.4284%) tune 110.3s ok=1
+P1 Mild: Ku 23.8819 (true 16.3506, err 46.0615%) Tu 39 (true 7.70001, err 406.493%) tune 455.7s ok=1
+P2 Normal: Ku 6.06684 (true 3.80688, err 59.365%) Tu 20 (true 17.1055, err 16.9214%) tune 90.2s ok=1
+P2 Half: Ku 6.17919 (true 3.80688, err 62.3163%) Tu 24.2 (true 17.1055, err 41.4749%) tune 193s ok=1
+P2 Mild: Ku 6.20634 (true 3.80688, err 63.0294%) Tu 47.6 (true 17.1055, err 178.273%) tune 593.7s ok=1
+P3 Normal: Ku 2.82333 (true 1.5198, err 85.7696%) Tu 23.2 (true 21.9603, err 5.6454%) tune 107.8s ok=1
+P3 Half: Ku 2.84344 (true 1.5198, err 87.0925%) Tu 25.6 (true 21.9603, err 16.5742%) tune 222.9s ok=1
+P3 Mild: Ku 2.8276 (true 1.5198, err 86.0503%) Tu 36.6 (true 21.9603, err 66.6647%) tune 537.8s ok=1
+P4 Normal: Ku 25.3559 (true 16.3506, err 55.0764%) Tu 29.2 (true 23.1, err 26.4068%) tune 148.2s ok=1
+P4 Half: Ku 25.5244 (true 16.3506, err 56.1075%) Tu 38.4 (true 23.1, err 66.2336%) tune 318.7s ok=1
+P4 Mild: Ku 25.2149 (true 16.3506, err 54.2144%) Tu 113.6 (true 23.1, err 391.774%) tune 1326.8s ok=1
+P5 Normal: Ku 12.8577 (true 7.53744, err 70.585%) Tu 27.6 (true 22.237, err 24.1172%) tune 125.1s ok=1
+P5 Half: Ku 13.1482 (true 7.53744, err 74.4391%) Tu 33.6 (true 22.237, err 51.0992%) tune 263.3s ok=1
+P5 Mild: Ku 15.0527 (true 7.53744, err 99.7055%) Tu 62.8 (true 22.237, err 182.412%) tune 751.9s ok=1
+
+== Phase B: gain-rule verification on P2 (Normal mode) ==
+ZN max_rel_diff=0.0523982 ppm (Ku=6.06684 Tu=20)
+CC max_rel_diff=0.0196493 ppm (Ku=6.06684 Tu=20)
+IMC max_rel_diff=0.0566244 ppm (Ku=6.06684 Tu=20)
+TL max_rel_diff=0.12214 ppm (Ku=6.06684 Tu=20)
+Lambda max_rel_diff=0.0566244 ppm (Ku=6.06684 Tu=20)
+
+== Relay audit: library vs independent estimate vs bias-centered ablation ==
+P1 Ku_err lib=47.5198% indep(steady)=-23.8402% bias=48.5075% bias+steady=-23.9682% Tu_err lib=32.4674% bias=6.4934% dutyHigh=128.748 d=127.5
+P2 Ku_err lib=59.365% indep(steady)=-17.1837% bias=65.6447% bias+steady=-16.6305% Tu_err lib=16.9214% bias=-0.616802% dutyHigh=113.647 d=127.5
+P3 Ku_err lib=85.7696% indep(steady)=-3.64644% bias=87.3632% bias+steady=-3.82335% Tu_err lib=5.6454% bias=-2.55123% dutyHigh=117.801 d=127.5
+P4 Ku_err lib=55.0764% indep(steady)=-20.4311% bias=59.2897% bias+steady=-19.9397% Tu_err lib=26.4068% bias=1.2986% dutyHigh=129.565 d=127.5
+P5 Ku_err lib=70.585% indep(steady)=-8.20613% bias=77.6637% bias+steady=-8.03033% Tu_err lib=24.1172% bias=3.43101% dutyHigh=111.499 d=127.5
+factorial(Ku): mean lib=63.6632 steady=-14.6615 bias=67.6938 bias+steady=-14.4784 | main effect estimator=-78.3247pp centering=4.03058pp interaction=-3.84752pp
+factorial(Tu): mean lib=21.1116 bias=1.61099 | main effect centering=-19.5007pp
+
+== Track A closed-loop comparison (Normal oscillation, library defaults) ==
+P1 ZN Kp=14.4722 Ki=2.83768 Kd=18.452 OS=28.9833% tr=7.9s ts=>1800 IAE=6169.62 IAE1%=3075.1+-81.2299 IAE3%=4464.98+-155.43 class=overshoot success@1%=0/20 domclass@1%=overshoot settled@1% 2/5/10%=0/17/20 ess=3.04183 e_pred=0 tail_std=3.38959 tune=51.1s ok=1
+P1 CC Kp=19.2962 Ki=2.36474 Kd=38.1834 OS=21.2599% tr=7.9s ts=>1800 IAE=6423.67 IAE1%=3516.91+-100.149 IAE3%=4870.36+-202.713 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/8/20 ess=3.1466 e_pred=0 tail_std=3.59159 tune=51.1s ok=1
+P1 IMC Kp=3.05909 Ki=0.447628 Kd=2.65223 OS=0% tr=10.5s ts=>1800 IAE=4511.09 IAE1%=4474.03+-14.5419 IAE3%=2164.02+-32.5555 class=offset success@1%=0/20 domclass@1%=offset settled@1% 2/5/10%=0/20/20 ess=2.11605 e_pred=2.13939 tail_std=7.03991e-07 tune=51.1s ok=1
+P1 TL Kp=10.9638 Ki=0.488582 Kd=17.7509 OS=3.9907% tr=7.9s ts=>1800 IAE=5233.06 IAE1%=2740.29+-72.538 IAE3%=4285.26+-169.937 class=offset success@1%=0/20 domclass@1%=band settled@1% 2/5/10%=0/19/20 ess=2.62243 e_pred=0.0275252 tail_std=2.91323 tune=51.1s ok=1
+P1 Lambda Kp=3.05909 Ki=0.447628 Kd=2.65223 OS=0% tr=10.5s ts=>1800 IAE=4511.09 IAE1%=4474.03+-14.5419 IAE3%=2164.02+-32.5555 class=offset success@1%=0/20 domclass@1%=offset settled@1% 2/5/10%=0/20/20 ess=2.11605 e_pred=2.13939 tail_std=7.03991e-07 tune=51.1s ok=1
+P2 ZN Kp=3.6401 Ki=0.36401 Kd=9.10026 OS=19.6257% tr=3.9s ts=>1800 IAE=26059.3 IAE1%=4513.81+-121.985 IAE3%=6339.05+-227.668 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/1/20 ess=14.0522 e_pred=5.5477 tail_std=15.0569 tune=90.2s ok=1
+P2 CC Kp=4.85347 Ki=0.303342 Kd=18.8315 OS=37.4595% tr=3.9s ts=>1800 IAE=25561.9 IAE1%=5939.49+-202.866 IAE3%=8666.44+-370.682 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/13 ess=13.8444 e_pred=6.51208 tail_std=15.961 tune=90.2s ok=1
+P2 IMC Kp=3.4359 Ki=0.25641 Kd=5.84103 OS=16.3101% tr=3.9s ts=>1800 IAE=19967.9 IAE1%=15959.3+-92.1902 IAE3%=5344.66+-183.107 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=10.6897 e_pred=10.7514 tail_std=3.55835e-06 tune=90.2s ok=1
+P2 TL Kp=2.75765 Ki=0.0626739 Kd=8.75445 OS=3.39726% tr=3.9s ts=>1800 IAE=41990.5 IAE1%=27084.6+-215.535 IAE3%=6215.42+-264.655 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=23.1368 e_pred=23.2098 tail_std=10.2731 tune=90.2s ok=1
+P2 Lambda Kp=3.4359 Ki=0.25641 Kd=5.84103 OS=16.3101% tr=3.9s ts=>1800 IAE=19967.9 IAE1%=15959.3+-92.1902 IAE3%=5344.66+-183.107 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=10.6897 e_pred=10.7514 tail_std=3.55835e-06 tune=90.2s ok=1
+P3 ZN Kp=1.694 Ki=0.146034 Kd=4.9126 OS=73.5889% tr=2.3s ts=>1800 IAE=72949.3 IAE1%=29040.5+-262.273 IAE3%=13261.2+-405.425 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=40.9967 e_pred=26.0613 tail_std=41.5949 tune=107.8s ok=1
+P3 CC Kp=2.25866 Ki=0.121695 Kd=10.1658 OS=118.453% tr=1.7s ts=>1800 IAE=95656.8 IAE1%=13873+-514.504 IAE3%=12423.7+-412.594 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=52.9017 e_pred=23.069 tail_std=57.699 tune=107.8s ok=1
+P3 IMC Kp=3.49775 Ki=0.225022 Kd=6.89756 OS=122.173% tr=1.6s ts=>1800 IAE=99104.6 IAE1%=62010.7+-2891.15 IAE3%=13579.3+-616.672 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=54.9258 e_pred=12.0272 tail_std=62.1081 tune=107.8s ok=1
+P3 TL Kp=1.28333 Ki=0.0251437 Kd=4.72592 OS=16.2883% tr=4.2s ts=>1800 IAE=70337.2 IAE1%=54032+-275.109 IAE3%=24250+-525.848 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=38.8466 e_pred=41.5492 tail_std=32.2159 tune=107.8s ok=1
+P3 Lambda Kp=3.49775 Ki=0.225022 Kd=6.89756 OS=122.173% tr=1.6s ts=>1800 IAE=99104.6 IAE1%=62010.7+-2891.15 IAE3%=13579.3+-616.672 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=54.9258 e_pred=12.0272 tail_std=62.1081 tune=107.8s ok=1
+P4 ZN Kp=15.2135 Ki=1.04202 Kd=55.5293 OS=8.09019% tr=23.7s ts=>1800 IAE=6944.94 IAE1%=4449.26+-144.858 IAE3%=16885.3+-468.723 class=offset success@1%=0/20 domclass@1%=band settled@1% 2/5/10%=0/20/20 ess=2.77456 e_pred=0 tail_std=3.09527 tune=148.2s ok=1
+P4 CC Kp=20.2847 Ki=0.868351 Kd=114.909 OS=12.2171% tr=23.7s ts=>1800 IAE=7242.78 IAE1%=9834.79+-307.478 IAE3%=28673.2+-577.786 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/4/20 ess=2.96357 e_pred=0 tail_std=3.379 tune=148.2s ok=1
+P4 IMC Kp=3.58053 Ki=0.183016 Kd=8.88687 OS=0% tr=-1s ts=>1800 IAE=26202.7 IAE1%=19203.9+-141.807 IAE3%=5157.69+-164.248 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/1 ess=13.6262 e_pred=13.6807 tail_std=9.53674e-07 tune=148.2s ok=1
+P4 TL Kp=11.5254 Ki=0.179411 Kd=53.4193 OS=0% tr=24.2s ts=>1800 IAE=10944.6 IAE1%=7111.14+-219.383 IAE3%=25964.1+-526.689 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/12/20 ess=5.08977 e_pred=5.06173 tail_std=1.63502 tune=148.2s ok=1
+P4 Lambda Kp=3.58053 Ki=0.183016 Kd=8.88687 OS=0% tr=-1s ts=>1800 IAE=26202.7 IAE1%=19203.9+-141.807 IAE3%=5157.69+-164.248 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/1 ess=13.6262 e_pred=13.6807 tail_std=9.53674e-07 tune=148.2s ok=1
+P5 ZN Kp=7.71464 Ki=0.559032 Kd=26.6155 OS=8.56965% tr=8.8s ts=35.400000 IAE=1118.03 IAE1%=3991.1+-216.351 IAE3%=8693.27+-453.032 class=OK success@1%=0/20 domclass@1%=band settled@1% 2/5/10%=0/17/20 ess=1.61914e-05 e_pred=0 tail_std=4.1549e-06 tune=125.1s ok=1
+P5 CC Kp=10.2862 Ki=0.46586 Kd=55.0764 OS=6.75766% tr=9.7s ts=>1800 IAE=7652.97 IAE1%=4462.99+-214.644 IAE3%=23603.1+-706.116 class=oscillatory success@1%=0/20 domclass@1%=band settled@1% 2/5/10%=0/15/20 ess=3.70989 e_pred=0.439876 tail_std=4.10766 tune=125.1s ok=1
+P5 IMC Kp=3.56163 Ki=0.192604 Kd=8.35559 OS=0% tr=9.6s ts=>1800 IAE=24606 IAE1%=18210.6+-129.558 IAE3%=4500.78+-213.353 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=13.2526 e_pred=13.3086 tail_std=1.3592e-06 tune=125.1s ok=1
+P5 TL Kp=5.84443 Ki=0.0962521 Kd=25.6042 OS=0% tr=-1s ts=>1800 IAE=21987.5 IAE1%=3860.2+-182.899 IAE3%=17623.9+-606.51 class=oscillatory success@1%=0/20 domclass@1%=band settled@1% 2/5/10%=0/18/20 ess=11.7251 e_pred=11.7416 tail_std=2.26811e-06 tune=125.1s ok=1
+P5 Lambda Kp=3.56163 Ki=0.192604 Kd=8.35559 OS=0% tr=9.6s ts=>1800 IAE=24606 IAE1%=18210.6+-129.558 IAE3%=4500.78+-213.353 class=oscillatory success@1%=0/20 domclass@1%=oscillatory settled@1% 2/5/10%=0/0/0 ess=13.2526 e_pred=13.3086 tail_std=1.3592e-06 tune=125.1s ok=1
+
+== Marginal requirement failures over 25 clean runs ==
+composite success=1/25 | fail settling(2%)=24 fail overshoot(>20%)=7 fail offset(>2 units)=24
+
+== Settling-band sensitivity (settled fraction over 25 configurations) ==
+band 2\% clean: mean 4% (min 0, max 100)
+band 2\% noise 1\%: mean 0% (min 0, max 0)
+band 2\% noise 3\%: mean 0.8% (min 0, max 10)
+band 5\% clean: mean 24% (min 0, max 100)
+band 5\% noise 1\%: mean 34.2% (min 0, max 100)
+band 5\% noise 3\%: mean 23% (min 0, max 100)
+band 10\% clean: mean 40% (min 0, max 100)
+band 10\% noise 1\%: mean 51% (min 0, max 100)
+band 10\% noise 3\%: mean 50.2% (min 0, max 100)
+
+== Lambda sensitivity on P2 (T=10, L=5) ==
+P2 IMC lambda=0.5 Kp=3.4359 Ki=0.25641 Kd=5.84103 OS=16.3101% tr=3.9s IAE=19967.9
+P2 IMC lambda=10 Kp=1 Ki=0.0746269 Kd=1.7 OS=0% tr=-1s IAE=76502.1
+P2 IMC lambda=20 Kp=0.57265 Ki=0.042735 Kd=0.973504 OS=0% tr=-1s IAE=104627
+P2 Lambda lambda=0.5 Kp=3.4359 Ki=0.25641 Kd=5.84103 OS=16.3101% tr=3.9s IAE=19967.9
+P2 Lambda lambda=10 Kp=1 Ki=0.0746269 Kd=1.7 OS=0% tr=-1s IAE=76502.1
+P2 Lambda lambda=20 Kp=0.57265 Ki=0.042735 Kd=0.973504 OS=0% tr=-1s IAE=104627
+
+== Track B: rules with ground-truth models, AW off ==
+P1 ZN* Kp=9.81033 Ki=2.54814 Kd=9.44245 OS=70.7021% tr=7.9s ts=56.000000 IAE=1818.52 ess=5.6309e-06
+P1 CC* Kp=13.5833 Ki=6.86549 Kd=3.50538 OS=80.2622% tr=7.9s ts=>1800 IAE=27994.5 ess=14.3719
+P1 TL* Kp=7.43207 Ki=0.438729 Kd=9.08365 OS=20.5407% tr=7.9s ts=55.300000 IAE=1105.58 ess=5.06386e-05
+P1 IMC*$_{0.5}$ Kp=8 Ki=0.4 Kd=8 OS=18.2151% tr=7.9s ts=59.500000 IAE=1083.52 ess=5.8406e-05
+P1 IMC*$_{T}$ Kp=0.909091 Ki=0.0454545 Kd=0.909091 OS=0.0102392% tr=43.3s ts=75.900000 IAE=2191.83 ess=0.000469209
+P2 ZN* Kp=2.28413 Ki=0.267064 Kd=4.8839 OS=34.3235% tr=4s ts=32.300000 IAE=1128.18 ess=2.28882e-05
+P2 CC* Kp=2.91667 Ki=0.38447 Kd=3.88889 OS=65.8614% tr=3.9s ts=64.200000 IAE=1527.91 ess=1.91005e-05
+P2 TL* Kp=1.7304 Ki=0.045982 Kd=4.69832 OS=0% tr=53.3s ts=141.900000 IAE=2165.89 ess=0.000930786
+P2 IMC*$_{0.5}$ Kp=1.81818 Ki=0.181818 Kd=4.54545 OS=12.9598% tr=4.4s ts=39.900000 IAE=1027.55 ess=1.52588e-05
+P2 IMC*$_{T}$ Kp=0.666667 Ki=0.0666667 Kd=1.66667 OS=1.70939% tr=21.3s ts=35.900000 IAE=1590.15 ess=3.80915e-06
+P3 ZN* Kp=0.911882 Ki=0.0830484 Kd=2.50314 OS=18.9661% tr=5.1s ts=64.400000 IAE=1421.52 ess=6.86508e-05
+P3 CC* Kp=0.916667 Ki=0.0556548 Kd=2.44444 OS=6.3483% tr=5.8s ts=84.500000 IAE=1798.73 ess=0.000370044
+P3 TL* Kp=0.690819 Ki=0.014299 Kd=2.40803 OS=0% tr=188.1s ts=372.800000 IAE=6984.71 ess=0.00208282
+P3 IMC*$_{0.5}$ Kp=0.470588 Ki=0.117647 Kd=1.88235 OS=28.8596% tr=6.8s ts=64.600000 IAE=1827.42 ess=0.0001297
+P3 IMC*$_{T}$ Kp=0.333333 Ki=0.0833333 Kd=1.33333 OS=15.2011% tr=11.2s ts=52.000000 IAE=1759.82 ess=0.000350952
+P4 ZN* Kp=9.81033 Ki=0.849379 Kd=28.3274 OS=69.8653% tr=23.7s ts=166.600000 IAE=5324.4 ess=1.24954e-05
+P4 CC* Kp=13.5833 Ki=2.2885 Kd=10.5161 OS=79.5239% tr=23.7s ts=>1800 IAE=29665.3 ess=13.3702
+P4 TL* Kp=7.43207 Ki=0.146243 Kd=27.251 OS=19.6273% tr=23.7s ts=164.700000 IAE=3276.64 ess=0.00019265
+P4 IMC*$_{0.5}$ Kp=9.23077 Ki=0.153846 Kd=27.6923 OS=19.8385% tr=23.7s ts=181.100000 IAE=3310.45 ess=0.000224207
+P4 IMC*$_{T}$ Kp=0.909091 Ki=0.0151515 Kd=2.72727 OS=0.0105016% tr=130.2s ts=228.600000 IAE=6594.47 ess=0.00100327
+P5 ZN* Kp=4.52246 Ki=0.40675 Kd=12.5708 OS=60.7218% tr=8.8s ts=50.500000 IAE=1910.51 ess=2.72265e-05
+P5 CC* Kp=3.88636 Ki=0.508707 Kd=5.19613 OS=78.9717% tr=8.8s ts=248.000000 IAE=4233.46 ess=7.87033e-05
+P5 TL* Kp=3.42611 Ki=0.0700328 Kd=12.0931 OS=0% tr=10.5s ts=84.700000 IAE=1418.46 ess=0.000461578
+P5 IMC*$_{0.5}$ Kp=2.5 Ki=0.166667 Kd=6.875 OS=25.8647% tr=9s ts=45.100000 IAE=1465.31 ess=4.14201e-05
+P5 IMC*$_{T}$ Kp=0.731707 Ki=0.0487805 Kd=2.0122 OS=2.57541% tr=29.4s ts=81.600000 IAE=2241.65 ess=8.0106e-05
+
+== Anti-windup audit: predicted vs observed offset, AW on/off ==
+P2 IMC Ki=0.25641 Ieq=390 e_pred=10.7514 e_obs_on=10.6897 e_obs_off=8.31963e-06
+P2 TL Ki=0.0626739 Ieq=1595.56 e_pred=23.2098 e_obs_on=23.1368 e_obs_off=0.535275
+P3 TL Ki=0.0251437 Ieq=3977.15 e_pred=41.5492 e_obs_on=38.8466 e_obs_off=44.074
+P4 IMC Ki=0.183016 Ieq=546.4 e_pred=13.6807 e_obs_on=13.6262 e_obs_off=7.62939e-05
+P2 IMC lam=10 Ki=0.0746269 Ieq=1340 e_pred=42.3881 e_obs_on=42.2305 e_obs_off=0.000232682
+
+== Plant-gain sweep on P2 dynamics (K=0.5, K=2), Track A ==
+ZN K=0.5 OS=10.2902% ess=4.68418 IAE=9480.96 | K=2.0 OS=59.4022% ess=14.0677 IAE=25926
+CC K=0.5 OS=7.07823% ess=4.74248 IAE=9525.49 | K=2.0 OS=103.962% ess=15.2867 IAE=28024.9
+IMC K=0.5 OS=0% ess=23.3118 IAE=42622 | K=2.0 OS=106.795% ess=17.0862 IAE=31612.5
+TL K=0.5 OS=0% ess=19.189 IAE=35278.7 | K=2.0 OS=10.7203% ess=19.2221 IAE=35120.6
+Lambda K=0.5 OS=0% ess=23.3118 IAE=42622 | K=2.0 OS=106.795% ess=17.0862 IAE=31612.5
+
+== Resource footprint (host x86-64, -O2) ==
+sizeof(AutoTunePID) = 172 bytes
+update(input, dt) = 6.04245 ns/call (Normal mode)
+
+Done.

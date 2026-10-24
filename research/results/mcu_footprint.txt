@@ -1,0 +1,10 @@
+== AVR_ATmega328P (FQBN arduino:avr:uno) ==
+base text=444 data=0 bss=9
+lib text=6150 data=0 bss=170
+sizeof_probe=161
+
+== ESP32 (FQBN esp32:esp32:esp32) ==
+base text=188279 data=66433 bss=5292
+lib text=190471 data=66437 bss=5468
+sizeof_probe=172
+

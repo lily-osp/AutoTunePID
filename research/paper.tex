@@ -1,0 +1,564 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[a4paper, margin=2.2cm, columnsep=0.7cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xurl}
+\usepackage{pgfplots}
+\usepackage{cite}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+\usepackage[font=small,labelfont=bf]{caption}
+\pgfplotsset{compat=1.17}
+
+\title{\bfseries Comparative Performance Evaluation of Multi-Method PID Auto-Tuning for Resource-Constrained Embedded Control Systems\thanks{Software artifact: AutoTunePID v1.2.0, \url{https://github.com/lily-osp/AutoTunePID}. The benchmark harness, raw data, cross-compilation footprint script, and build scripts are released with this paper in the library repository under \texttt{research/}; every table and figure regenerates from a single \texttt{build.sh --sim} run.}}
+\author{Azzar Budiyanto\\[2pt]
+Independent Researcher, Jakarta, Indonesia\\[2pt]
+\texttt{azzar.budi@gmail.com}\quad ORCID 0009-0003-6856-7820}
+\date{October 24, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Auto-tuning options in embedded PID libraries are chosen by label, yet their closed-loop outcome conflates the tuning rule with the identification experiment and protection logic around it. This paper contributes three verifiable results from auditing one such library (AutoTunePID v1.2.0, five options, one relay experiment) with its unmodified shipped code in a deterministic host-side harness against five plants with analytic ground truth. First, a factorial relay audit quantifies identification error: switching the amplitude estimator from the library's transient-inclusive average to a steady-state window shifts the ultimate-gain error by $-78$ percentage points, whereas relay re-centering shifts it by only $+4$ points (while repairing the period estimate by $20$ points), so the inflation stems from the estimation procedure, not relay placement, for the tested plants and configuration. Second, a two-track design separates pipeline from rules: supplied ground-truth parameters, most rules settle within a fifth of the evaluation horizon with negligible offset, including on a delay-dominant plant where the end-to-end pipeline overshoots by 122\% (canonical Cohen-Coon is the exception on lag-dominant plants). Third, a source-derived anti-windup model yields the exact engagement condition $K_i I_{\max} < u_{eq}$, predicts the resulting offsets within 0.4 units of observation, and in the tested non-oscillatory cases a contribution-clamped reference repair eliminates the offsets attributed to the shipped limiter. A predeclared composite success criterion (settling, overshoot, offset) classifies every failure with marginal counts (24/24/7 of 25 configurations fail each requirement), and a multi-band analysis shows the measured settling rate is highly sensitive to the operational definition of settling: the settling-only fraction rises from 0\% at a 2\% band to 34--51\% at 5--10\% bands under 1\% noise. Cross-compilation measures the static footprint at 161 bytes per object on ATmega328P and 172 on ESP32; on-target timing and physical validation remain future work, positioning this study as verification and pre-validation under a frozen air-levitation protocol.
+\end{abstract}
+
+\noindent\textbf{Keywords:} PID control; auto-tuning; relay feedback; embedded systems; microcontrollers; Arduino; air levitation; benchmark protocol; performance evaluation
+
+\section{Introduction}
+
+More than eight decades after its introduction, the PID controller still governs the overwhelming majority of industrial regulatory loops, and field audits consistently report that only about a third of those loops perform acceptably \cite{desborough2002, samad2017}. The situation at the small end of the scale, on 8- and 32-bit microcontrollers (MCUs), is even less disciplined: firmware typically hard-codes gains copied from a tutorial, and the tuning question is revisited only when the loop visibly misbehaves. Classical tuning rules have been available since Ziegler and Nichols \cite{ziegler1942} and Cohen and Coon \cite{cohen1953}, and relay-feedback auto-tuning \cite{astrom1984} made identification of the critical point cheap enough for any modern MCU. Yet the most widely used embedded PID library we examined ships no auto-tuning in its core \cite{beauregard2011}, and the auto-tuning extensions we found expose a single strategy, publish no verification that their implementations match the published rules, and do not document the failure modes of the identification experiment on which everything downstream depends.
+
+AutoTunePID \cite{autotunepid}, an open-source Arduino library (v1.2.0) implementing a C++14 PID core written with reference to AUTOSAR C++14 guidelines \cite{autosar}, exposes five auto-tuning options behind one relay-feedback experiment. We use it here as a compact test artifact: the right object of study is not the library itself but the general question of \emph{how an auto-tuned loop's outcome is produced}. Two methodological principles govern the study: \emph{the methods a library supports are not automatically equivalent to validated implementations of the published algorithms}, and \emph{closed-loop performance conflates the tuning rule with the identification experiment and the protection logic that surround it}. The research questions are:
+
+\begin{itemize}
+\item \textbf{RQ1} (verification): Are the implemented tuning methods faithful to their published rules, and where do they deviate?
+\item \textbf{RQ2} (attribution): Under identical, controlled plant dynamics in simulation, how much of the closed-loop outcome is caused by the tuning rules themselves, and how much by the shared identification and protection mechanisms?
+\item \textbf{RQ3} (embedded cost): What memory, code, and commissioning-time budget does multi-method auto-tuning consume on resource-constrained targets?
+\item \textbf{RQ4} (benchmark design): How should the methods be compared on physical hardware with statistical rigor, explicit failure criteria, and full reproducibility?
+\end{itemize}
+
+The paper's scientific contributions are three results established by ablation on this artifact, plus a benchmark framework:
+
+\begin{itemize}
+\item A quantitative identification-error attribution (factorial relay audit): for the tested plants and relay configuration, the amplitude-estimation procedure, not relay centering, dominates ultimate-gain error, with main effects of $-78.3$ versus $+4.0$ percentage points (Section~\ref{sec:relayaudit}).
+\item A controlled two-track separation of identification-pipeline effects from tuning-rule behavior, showing the same rules that fail end-to-end mostly succeed with correct inputs (Section~\ref{sec:trackb}).
+\item A source-derived anti-windup engagement condition ($K_i I_{\max} < u_{eq}$) whose closed-form offset prediction matches observation within 0.4 units and whose recommended repair is validated in ablation (Section~\ref{sec:awaudit}).
+\item A predeclared composite success criterion with failure classification, a multi-band settling analysis that separates controller behavior from metric design, measured cross-compilation footprints for AVR and ESP32, and a frozen hardware benchmark protocol (Sections~\ref{sec:results} and~\ref{sec:protocol}).
+\end{itemize}
+
+Throughout, simulation findings are labeled as such; the hardware campaign in Section~\ref{sec:protocol} is specified but not executed, and on-target timing measurement belongs to it.
+
+\section{Background and Related Work}
+
+\subsection{Tuning rules for PID controllers}
+
+The Ziegler-Nichols ultimate-gain method \cite{ziegler1942} derives gains from the critical point $(K_u, T_u)$ and yields quarter-amplitude decay tuning, fast but under-damped. Cohen and Coon \cite{cohen1953} extended the open-loop reaction-curve approach; their classical rules consume a fitted FOPDT model, a distinction that matters for RQ1. Tyreus and Luyben \cite{tyreus1992} proposed deliberately conservative multipliers. The IMC framework of Rivera, Morari, and Skogestad \cite{rivera1986} casts tuning as the selection of a closed-loop time constant $\lambda$; its PID approximation underlies the SIMC rules \cite{skogestad2003, skogestad2012} and industrial Lambda tuning. O'Dwyer's handbook \cite{odwyer2006} catalogues hundreds of rules; surveys \cite{astrom2006, borase2021} confirm that rules evaluated under assumed-perfect models degrade unpredictably when the model is wrong, which is precisely the situation of an auto-tuner whose model comes from a relay experiment.
+
+\subsection{Relay-feedback auto-tuning}
+
+Åström and Hägglund \cite{astrom1984} showed that a relay in feedback with the process generates a limit cycle whose amplitude $a$ and period estimate the critical point via the describing function $K_u = 4d/(\pi a)$. The method underlies commercial auto-tuners and a large literature on asymmetry, hysteresis, load disturbances, and transient rejection \cite{astrom1988book, hang1993}. Three properties matter here: the describing-function idealization degrades for non-sinusoidal cycles, asymmetric oscillation biases amplitude estimates, and start-up transients contaminate averages taken over all cycles. Section~\ref{sec:relayaudit} quantifies all three for this library.
+
+\subsection{PID on microcontrollers, and where this study sits}
+
+The de facto Arduino PID library \cite{beauregard2011} popularized derivative-on-measurement and anti-windup; its companion autotune extension implements a single ZN-class relay method. We are not aware of another open-source MCU library exposing five auto-tuning options behind one relay experiment, but we claim no systematic market survey; Table~\ref{tab:related} positions the closest artifacts we verified, and the contribution of this paper does not rest on that priority claim. Recent PID tooling research includes autodifferentiation-based tuning \cite{kumar2021} and state-machine controllers \cite{thapa2026}. Air levitation rigs are established benchmark plants \cite{jernigan2009, tkacik2021, zachi2025}; none of those works compared multiple auto-tuning methods under an embedded resource budget.
+
+\begin{table}[t]
+\centering
+\caption{Positioning against the closest artifacts and studies.}
+\label{tab:related}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{2.0cm}p{2.2cm}p{1.1cm}p{2.0cm}@{}}
+\toprule
+Artifact / study & Tuning methods & Target & Verification of shipped rules \\
+\midrule
+Arduino PID + AutoTune \cite{beauregard2011} & one (ZN-class relay) & MCU & none published \\
+AutoTunePID v1.2.0 \cite{autotunepid} & five options, one relay & MCU & this study \\
+Tuning-rule catalogues \cite{odwyer2006, skogestad2003} & hundreds & process control & rules evaluated under assumed models \\
+Levitation rig studies \cite{jernigan2009, tkacik2021, zachi2025} & one per study & rig & n/a (no auto-tuner audit) \\
+This work & five options, audited & MCU + rig & numerical + ablation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Stage 1: The AutoTunePID Library and Its Verification}
+\label{sec:library}
+
+\subsection{Architecture and interface}
+
+The library (namespace \texttt{atp}, a single \texttt{.h/.cpp} pair, roughly 28 KB of source) exposes \texttt{AutoTunePID(minOutput, maxOutput, method)} with a validated configuration surface: setpoint, tuning method, manual gains, exponential input/output filters ($0.01 \le \alpha \le 1$), output slew-rate limit, anti-windup enable and threshold, oscillation mode and step count, $\lambda$, and a tuning hysteresis band. Nine operational modes cover commissioning and degraded operation. Two \texttt{update()} overloads separate convenience from determinism: the single-argument form self-times at a 100 ms cadence, while \texttt{update(input, dt)} accepts an explicit time step for RTOS tasks and ISRs; the deterministic overload also makes the present host-side evaluation exact. The control law is the parallel form
+\begin{equation}
+u(t) = K_p\,e(t) + K_i\!\int_0^t e(\tau)\,d\tau + K_d\left(-\frac{dy}{dt}\right),
+\label{eq:pid}
+\end{equation}
+with derivative on the measurement (no derivative kick), rectangular integration $I \leftarrow I + e\,\Delta t$, and backward difference. We describe the code as written with reference to AUTOSAR C++14 guidelines \cite{autosar}; we claim no formal compliance certification.
+
+\subsection{The relay identification experiment}
+
+In Tune mode the controller becomes a relay. Oscillation modes select relay levels spanning the full output span (Normal), $\pm 25\%$ (Half), or $\pm 12.5\%$ (Mild) around mid-span, with step counts of 10, 20, and 40 half-cycles. Toggling occurs when the measurement crosses the setpoint outside a hysteresis band. At each crossing the library records the half-period and the peak-to-valley extent within that half-cycle; after the final crossing it applies
+\begin{equation}
+K_u = \frac{4d}{\pi \bar{a}}, \qquad T_u = 2\,t_{\text{half}},
+\label{eq:relay}
+\end{equation}
+where $d = (\text{high} - \text{low})/2$ and $\bar a$ is the mean per-half-cycle amplitude over \emph{all} cycles, including the start-up transient. The model-based methods infer a FOPDT approximation from fixed ratios,
+\begin{equation}
+T \approx 0.67\,T_u, \qquad L \approx 0.17\,T_u.
+\label{eq:tlmap}
+\end{equation}
+
+\subsection{Implementation verification and a method audit}
+\label{sec:verify}
+
+Each gain rule was recomputed in double precision from the \emph{same} relay estimates the tuner consumed (plant P2, Section~\ref{sec:simmethod}). Table~\ref{tab:phaseb}: every option matches its documented formula to within 0.13 parts per million, i.e., single-precision rounding. The implementation is faithful to its documentation; faithfulness to the canonical published methods is a different question. We call an option \emph{canonical} when it implements the published formula \emph{on the class of inputs that publication specifies}. Table~\ref{tab:audit} applies this definition: the five options reduce to four distinct gain mappings, of which two (ZN, TL) are canonical; the CC option is a Ku-based variant rather than the reaction-curve rule; the IMC and Lambda mappings are algebraically identical in this version (an equivalence of implementations, not a claim about the underlying tuning philosophies); and the model-based rows omit the process gain $K$.
+
+\begin{table}[t]
+\centering
+\caption{Verification of emitted gains against independent double-precision recomputation from the same relay estimates ($K_u = 6.067$, $T_u = 20.0$ s, $\lambda = 0.5$ s, P2). Maximum relative deviation below 0.13 ppm per option.}
+\label{tab:phaseb}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\input{results/table_phaseb.tex}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Method audit. ``Canonical'' = implements the published formula on the inputs that publication specifies. Track B (Section~\ref{sec:trackb}) supplies each published rule its required inputs.}
+\label{tab:audit}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lp{0.85cm}p{1.2cm}p{2.35cm}p{1.3cm}@{}}
+\toprule
+Option & Rule & Inputs & Deviation in v1.2.0 & Track B \\
+\midrule
+ZN & \cite{ziegler1942} & $K_u, T_u$ & none: canonical & analytic \\
+CC & \cite{cohen1953} & $K, T, L$ & Ku-based multipliers, not the reaction-curve rule & CC* instead \\
+IMC & \cite{rivera1986} & $K, T, L, \lambda$ & omits process gain $K$ & true model \\
+TL & \cite{tyreus1992} & $K_u, T_u$ & none: canonical & analytic \\
+Lambda & \cite{skogestad2003} & $K, T, L, \lambda$ & mapping identical to IMC row & via IMC* \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Safety and filtering mechanisms}
+
+Anti-windup clamps the raw integral accumulator: whenever $|I| > \tau_w \cdot |\text{maxOutput} - \text{minOutput}|$ (default $\tau_w = 0.8$, so $I_{\max} = 204$ on a 0--255 output), $I$ is clamped. The accumulator $I = \sum e_k \Delta t$ carries units of engineering units $\times$ seconds, while the clamp threshold is derived from output units; the integral enters the output only through the product $K_i I$ (output units). Input and output exponential filters share one routine, and a slew-rate limiter bounds actuator change. These mechanisms are individually conventional \cite{astrom2006, visioli2006}; Section~\ref{sec:awaudit} shows their interaction with generated tunings is not.
+
+\section{Stage 2: Simulation Pre-Validation Methodology}
+\label{sec:simmethod}
+
+\subsection{Test plants and harness}
+
+Five linear plants (Table~\ref{tab:plants}) span dead-time-to-time-constant ratios from lag-dominant ($L/T = 0.1$) to delay-dominant ($2.0$), plus a second-order model; a sweep varies $K \in \{0.5, 2\}$ (Section~\ref{sec:gain}). The harness compiles \texttt{AutoTunePID.cpp} unmodified (g++ 16.2, \texttt{-O2}, C++14) against a 20-line \texttt{Arduino.h} stub; the simulated clock advances deterministically at $\Delta t = 0.1$ s, mirroring the library's self-timed tick (the deterministic overload accepts any step, so the same code path serves the 50 Hz hardware loop). Plants integrate exactly by exponential discretization with gain and ring-buffer delay; true critical points come from bisection on $\angle G(j\omega) = -\pi$.
+
+\begin{table}[t]
+\centering
+\caption{Benchmark plants.}
+\label{tab:plants}
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ID & Character & $K$ & $T$ & $L$ & $T_2$ \\
+ &  &  & [s] & [s] & [s] \\
+\midrule
+P1 & lag-dominant, $L/T{=}0.1$ & 1.0 & 20 & 2 & -- \\
+P2 & moderate, $L/T{=}0.5$ & 1.0 & 10 & 5 & -- \\
+P3 & delay-dominant, $L/T{=}2.0$ & 1.0 & 4 & 8 & -- \\
+P4 & slow thermal, $T{=}60$ & 1.0 & 60 & 6 & -- \\
+P5 & SOPDT & 1.0 & 15 & 3 & 5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimental design}
+
+\textbf{Track A (end-to-end)} runs the shipped pipeline: Tune mode with library defaults (Normal oscillation, 10 half-cycles, zero hysteresis, $\lambda = 0.5$ s), then a 0-to-100-unit setpoint step for 1800 s in Normal mode with anti-windup at defaults.
+
+\textbf{Track B (rules with ground truth)} supplies each published rule its required inputs: analytic critical points for ZN and TL; the true FOPDT parameters (Skogestad half-rule on P5) for IMC at $\lambda = 0.5$ s and $\lambda = T$; and the canonical reaction-curve Cohen-Coon CC* with $K_p = (1/K)[(4/3)(T/L) + 1/4]$, $T_i = L\,(32 + 6T/L)/(13 + 8T/L)$, $T_d = 4L/(11 + 2T/L)$ \cite{cohen1953}. Track B changes three factors relative to Track A (Table~\ref{tab:factors}); it is a diagnostic comparison under specified inputs and protection settings, not an isolated estimate of the effect of identification error alone, and the anti-windup column of Table~\ref{tab:trackb} separates the protection factor within Track B.
+
+\begin{table}[t]
+\centering
+\caption{Factor changes between tracks.}
+\label{tab:factors}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Factor & Track A & Track B \\
+\midrule
+Rule inputs & relay-derived & analytic / true model \\
+CC rule & library variant & canonical CC* \\
+Anti-windup & on (default) & off (audited \S\ref{sec:awaudit}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Relay audit (factorial).} The library's identification is audited by an \emph{independent estimator} re-deriving $K_u, T_u$ from the raw output trace using only steady-state cycles (same-direction setpoint crossings for the period, steady-window peak-to-peak for amplitude); by a \emph{bias-centered relay} ablation, a harness-side relay replicating the library's crossing logic and post-processing but switching around the actuator bias $u_{eq} = y_{sp}/K$ at the same amplitude (the shipped relay cannot be re-centered without modifying the library); and by their combination, completing the centering $\times$ estimator factorial. Raw traces $(t, y, u)$ for every audited run are released as CSV.
+
+\textbf{Anti-windup audit and repair.} The engagement condition is derived from the shipped steady-state equation; predicted offsets are compared with observed ones; the shipped \texttt{enableAntiWindup(false)} switch isolates causality; and a harness-side \emph{reference repair} (identical law, but the integral contribution $K_i I$ clamped to the output span instead of the raw accumulator) demonstrates the recommended fix under identical conditions. The repair is an ablation arm, not shipped code.
+
+\textbf{Noise campaign.} Measurement noise is Gaussian with standard deviation equal to 1\% or 3\% of setpoint, injected only into the controller's input; all performance metrics are scored on the \emph{true} plant output, so settling reflects propagated noise, not measurement excursions. Generators are \texttt{std::mt19937} with seeds 1001--1020 (1\%) and 2001--2020 (3\%), fixed in the released harness.
+
+\subsection{Success criterion, failure classification, and censoring}
+
+A run \emph{succeeds} when it (i) settles within the 2\%-of-setpoint band, where settling requires the true output to remain inside the band continuously for the final 5\% of the horizon, (ii) overshoots by at most 20\%, and (iii) holds a mean \emph{absolute} steady-state error of at most 2 units over the final tenth of the horizon. This criterion is predeclared. Unsuccessful clean runs receive one primary label by declared precedence: \emph{oscillatory} (outside the 5\% band at the horizon), then \emph{overshoot} (exceeds the 20\% limit), then \emph{offset} (mean absolute error $>$ 2 units), then \emph{band} (none of the above, but the 2\% band is not held); marginal counts of each individually violated requirement are reported alongside, so simultaneous violations are visible. Unsettled settling times are right-censored at 1800 s, never averaged as finite. Because a 2\% band may be intrinsically hard to hold under noise, settled fractions are additionally reported for 5\% and 10\% bands; these are settling-only rates and must not be confused with the composite success rate.
+
+\section{Stage 2: Simulation Results}
+\label{sec:results}
+
+\subsection{Identification accuracy and the relay audit}
+\label{sec:relayaudit}
+
+Table~\ref{tab:est}: $K_u$ is overestimated in every configuration; $T_u$ is acceptable only in Normal mode (5.6--32.5\% error), while the attenuated Half and Mild modes inflate the period by up to 406\% and cost 2.2--9 times longer commissioning (51 s versus 456 s on P1; 148 s versus 1327 s on P4).
+
+\begin{table}[t]
+\centering
+\caption{Relay identification accuracy against analytic critical points, per oscillation mode (library pipeline).}
+\label{tab:est}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\input{results/table_est.tex}
+\end{table}
+
+Table~\ref{tab:relay} is the factorial audit; its main effects, averaged over the five plants in signed percentage points, are: switching the amplitude estimator (library $\to$ steady-state) shifts mean $K_u$ error by $-78.3$ points; switching relay centering (span $\to$ bias) shifts it by $+4.0$ points; their interaction is $-3.8$ points. For the period, centering is the dominant repair ($-19.5$ points, from $+21.1\%$ mean error to $+1.6\%$). Within the tested plants and relay configuration, the ultimate-gain inflation is therefore an \emph{estimation-procedure} effect (the transient-inclusive per-half-cycle average), not a centering effect, while centering is the operative fix for the period; the residual $-4$ to $-24\%$ left by the steady-state estimator is consistent with describing-function idealization and grows with lag dominance. The measured duty cycle (0.44--0.51 high) confirms the span-centered oscillation is only mildly asymmetric. These conclusions are scoped: nonlinear plants, strong asymmetry, hysteresis, load disturbances, and other relay amplitudes were not exercised, and the recommended repair retains both parts (discard start-up cycles \emph{and} center the relay).
+
+\begin{table}[t]
+\centering
+\caption{Factorial relay audit (Normal mode), errors relative to analytic truth. Columns: the library pipeline (lib.); the independent steady-state estimator on the same trace (steady); a bias-centered relay with the library's estimation procedure (bias); and their combination (bias+steady). Raw traces for every row are released as CSV.}
+\label{tab:relay}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\input{results/table_relay.tex}
+\end{table}
+
+\subsection{Track A: end-to-end library performance}
+
+Table~\ref{tab:main} reports the full matrix; Figures~\ref{fig:stepP1} and~\ref{fig:stepP3} show representative steps.
+
+\begin{table*}[t]
+\centering
+\caption{Track A: end-to-end setpoint-step results (library defaults, Normal oscillation, $\lambda=0.5$ s). OS is overshoot, $t_r$ rise time, $t_s$ 2\%-band settling (``$>$1800'' right-censored), IAE over 1800 s, IAE$_{1\%}$ the mean over 20 noise seeds at 1\% of setpoint, and $|e|_\infty$ the observed steady-state offset. Gains are as emitted by the tuner.}
+\label{tab:main}
+\small
+\setlength{\tabcolsep}{4pt}
+\input{results/table_main.tex}
+\end{table*}
+
+\textbf{Lag-dominant plants (P1, P4, P5).} On P1 the model-based options (IMC and Lambda, identical gains) deliver zero overshoot and the best clean IAE (4511) at a 33\% slower rise; ZN overshoots 29\%, CC 21\%, both still oscillatory at the horizon. TL is the best compromise (4.0\% overshoot, best noise IAE $2740 \pm 73$). On slow P4, ZN wins clean IAE (6945) at 8.1\% overshoot while the model-based options stall at a 13.6-unit offset below the 90\% level (mechanism: Section~\ref{sec:awaudit}). P5 is the showcase: every option yields a stable loop and ZN settles in 35.4 s with IAE 1118.
+
+\textbf{Balanced plant (P2).} All options remain oscillatory (OS 3.4--37.5\%); IMC/Lambda achieve the best clean IAE (19968) with a 10.7-unit offset; TL carries a 23.1-unit offset.
+
+\textbf{Delay-dominant plant (P3).} The stress case: the model-based options overshoot 122\%, worse than ZN's 73.6\%, because the fixed mapping of Eq.~\eqref{eq:tlmap} estimates $T \approx 15.5$ s, $L \approx 3.9$ s for a true $T = 4$ s, $L = 8$ s plant, tuning aggressively for a fiction of the plant. TL is least bad at 16.3\%. Section~\ref{sec:trackb} shows how much of this is the pipeline rather than the rules.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=\linewidth, height=5.6cm, xmin=0, xmax=600, ymin=0, ymax=140,
+  xlabel={time [s]}, ylabel={process output}, grid=both, grid style={gray!18},
+  legend style={font=\scriptsize, at={(0.98,0.98)}, anchor=north east, fill=none},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize}]
+\addplot[color=red!80!black, thick]           table[x=t,y=y] {figures/step_P1_ZN.csv};
+\addlegendentry{ZN}
+\addplot[color=orange!85!black, thick]        table[x=t,y=y] {figures/step_P1_CC.csv};
+\addlegendentry{CC}
+\addplot[color=blue!80!black, thick]          table[x=t,y=y] {figures/step_P1_IMC.csv};
+\addlegendentry{IMC/Lambda}
+\addplot[color=green!45!black, thick]         table[x=t,y=y] {figures/step_P1_TL.csv};
+\addlegendentry{TL}
+\addplot[gray!60, dashed, thin] coordinates {(0,100) (600,100)};
+\addlegendentry{setpoint}
+\end{axis}
+\end{tikzpicture}
+\caption{Track A setpoint step on the lag-dominant plant P1 ($T{=}20$ s, $L{=}2$ s). IMC and Lambda coincide. ZN and CC are fast but oscillatory; the model-based tunings are smooth but offset-limited (Section~\ref{sec:awaudit}).}
+\label{fig:stepP1}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=\linewidth, height=5.6cm, xmin=0, xmax=1800, ymin=0, ymax=240,
+  xlabel={time [s]}, ylabel={process output}, grid=both, grid style={gray!18},
+  legend style={font=\scriptsize, at={(0.98,0.98)}, anchor=north east, fill=none},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize}]
+\addplot[color=red!80!black, thick]           table[x=t,y=y] {figures/step_P3_ZN.csv};
+\addlegendentry{ZN}
+\addplot[color=orange!85!black, thick]        table[x=t,y=y] {figures/step_P3_CC.csv};
+\addlegendentry{CC}
+\addplot[color=blue!80!black, thick]          table[x=t,y=y] {figures/step_P3_IMC.csv};
+\addlegendentry{IMC/Lambda}
+\addplot[color=green!45!black, thick]         table[x=t,y=y] {figures/step_P3_TL.csv};
+\addlegendentry{TL}
+\addplot[gray!60, dashed, thin] coordinates {(0,100) (1800,100)};
+\addlegendentry{setpoint}
+\end{axis}
+\end{tikzpicture}
+\caption{Track A setpoint step on the delay-dominant plant P3 ($T{=}4$ s, $L{=}8$ s). The heuristic FOPDT mapping inverts the plant character; all options also exhibit anti-windup-induced offset. Compare Table~\ref{tab:trackb}.}
+\label{fig:stepP3}
+\end{figure}
+
+\subsection{Success classification and band sensitivity}
+\label{sec:success}
+
+Under the predeclared composite criterion, exactly one of the 25 Track A configurations succeeds in the clean condition (P5/ZN), and zero of 500 noise runs at 1\% succeed. The marginal requirement failures over the 25 clean runs are: settling (2\% band) failed in 24, mean absolute offset ($>$ 2 units) failed in 24, overshoot ($>$ 20\%) failed in 7; settling and offset failures co-occur almost everywhere, while overshoot is a secondary, lag-dominant phenomenon. Table~\ref{tab:class} assigns each configuration its primary label by the precedence of Section~\ref{sec:simmethod}: on the balanced and delay-dominant plants every option is oscillatory; on the lag-dominant plants the failures split between overshoot (ZN, CC on P1), quiet offsets (the model-based options, TL on P4), and band-limited decay; the noise column shows the dominant label is usually unchanged by 1\% noise, i.e., noise rarely changes the failure mechanism, it only thickens it.
+
+\begin{table}[t]
+\centering
+\caption{Failure classification under the predeclared success criterion (clean run; one primary label by the precedence of Section~\ref{sec:simmethod}) and the dominant label across 20 seeds at 1\% noise. Labels: OK (success), overshoot ($>$ 20\%), offset (mean $|e| > 2$ units), oscillatory (outside the 5\% band), band (2\% band not held, no other violation).}
+\label{tab:class}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\input{results/table_class.tex}
+\end{table}
+
+Table~\ref{tab:band} is the band-sensitivity analysis. The settling-only settled fraction depends strongly on the band definition: at the 2\% band, 4\% of configurations settle in the clean condition and 0\% at 1\% noise; at the 5\% band, 24\% clean and 34.2\% at 1\% noise; at the 10\% band, 40\% clean and 51.0\% noisy. What this establishes is \emph{sensitivity of the measured settling rate to the operational definition of settling}: widening the band relaxes the requirement, it does not improve any controller, and the composite success rate at the predeclared criterion remains 1/25 clean and 0/500 noisy regardless of band. Within that framing, two observations follow. First, the headline ``nothing settles at 1\% noise'' is dominated by band-versus-fluctuation geometry: a 2\% band scored on the true output is comparable in size to the noise-driven output fluctuation of derivative-active loops, so random crossings defeat the dwell requirement regardless of controller quality. Second, at the wider bands the noisy loops settle \emph{more often} than the clean ones on these plants, because measurement noise dithers the slow limit cycles that dominate the delay-dominant failures (ZN on P3: clean IAE 72949, $29040 \pm 262$ at 1\% noise, $13261 \pm 405$ at 3\%); on well-damped loops the effect reverses and noise degrades monotonically (P5/ZN: IAE $1118 \to 3991 \pm 216 \to 8693 \pm 453$). Seed-to-seed standard deviations are 1--9\% of the mean, so method rankings by noise IAE are stable. This analysis \emph{motivates} the hardware protocol's noise-floored band; whether that band is the right operational criterion for the physical system remains an empirical question the campaign itself must confirm.
+
+\begin{table}[t]
+\centering
+\caption{Settling-band sensitivity: \emph{settling-only} fraction of the 25 Track A configurations (mean, min, max), by band width and condition. These rates are distinct from the composite success rate, which is reported in the text and is band-independent at its predeclared 2\% criterion.}
+\label{tab:band}
+\small
+\setlength{\tabcolsep}{4pt}
+\input{results/table_band.tex}
+\end{table}
+
+\subsection{Track B: the rules with ground-truth models}
+\label{sec:trackb}
+
+Table~\ref{tab:trackb} reruns the comparison with every rule supplied the parameters it was designed for; Table~\ref{tab:factors} lists exactly which factors change relative to Track A, so the track difference must not be read as the isolated effect of identification error alone. Within Track B, the anti-windup-off and -on columns separate the protection factor: for rules whose $K_i$ implies $K_i I_{\max} < u_{eq}$, enabling the shipped limiter reintroduces the predicted offset (e.g., TL* on P5: 0.0 units with the limiter off, 19.3 with it on), while hot tunings are unaffected. Reading the tracks together:
+
+\begin{itemize}
+\item Every ground-truth configuration except canonical CC* settles quickly (32--373 s, versus right-censored almost everywhere in Track A) with negligible steady-state offset; CC* rings past the horizon on the lag-dominant P1 and P4 (offsets 14.4 and 13.4 units), consistent with the known aggressiveness of reaction-curve settings.
+\item On the delay-dominant P3, IMC with $\lambda = T$ overshoots 15.2\% and with $\lambda = 0.5$ s still only 28.9\%, versus 122\% end-to-end: the identification pipeline, not the IMC concept, produces the end-to-end failure on these plants.
+\item With honest inputs the ranking becomes regime-dependent as the process-control literature predicts \cite{skogestad2003, astrom2006}: TL* is the overshoot-minimizer on P3/P5; IMC$_{0.5}^*$ wins clean IAE on P2/P3/P4; canonical CC* is the most aggressive on lag-dominant plants.
+\end{itemize}
+
+\begin{table*}[t]
+\centering
+\caption{Track B: tuning rules supplied ground-truth parameters (Table~\ref{tab:factors}); settling is 2\%-band, ``$>$1800'' right-censored. The last two columns give the steady-state offset with the shipped anti-windup limiter off (the Track B baseline) and on, isolating the protection factor within the track.}
+\label{tab:trackb}
+\small
+\setlength{\tabcolsep}{4pt}
+\input{results/table_trackb.tex}
+\end{table*}
+
+\subsection{Anti-windup mechanism audit, ablation, and repair}
+\label{sec:awaudit}
+
+The shipped limiter clamps the raw accumulator at $I_{\max} = 204$. Under the following assumptions, which the audit makes explicit, the consequence is closed-form: (A1) a static unity-gain plant at steady state ($y = u$); (A2) the library's parallel law with zero derivative at steady state; (A3) the clamp engaged persistently; (A4) a non-oscillatory steady state. Then
+\begin{equation}
+\begin{split}
+y\,(1 + K_p) &= K_p\, y_{sp} + K_i I \\
+y_{\max} &= \frac{K_p\, y_{sp} + K_i I_{\max}}{1 + K_p},
+\end{split}
+\label{eq:aw}
+\end{equation}
+a persistent offset exists iff $K_i I_{\max} < u_{eq}$ (with $u_{eq} = y_{sp}$ here; the proportional gain cancels from the engagement condition), and then $e_\infty = (u_{eq} - K_i I_{\max})/(1 + K_p)$. Offsets with other causes (persistent oscillation, actuator saturation, plant-model mismatch) are outside this equation's domain. Table~\ref{tab:aw} validates the model: in the four non-oscillatory cases the prediction matches observation within 0.4 units (P4/IMC: 13.68 predicted, 13.63 observed; P2/$\lambda{=}T$: 42.39 vs 42.23); disabling the limiter removes those offsets entirely ($\le 0.5$ units); and in the tested non-oscillatory cases, contribution-scaled clamping eliminates the offsets attributed to the shipped accumulator limiter while retaining bounded integral action. This validates the repair direction under the stated model assumptions; it does not establish general superiority over conditional integration or behavior under arbitrary plant gain, actuator constraints, or nonlinearity. The oscillatory P3/TL case keeps its error under all three settings because a limit cycle, not the clamp, carries it, which is precisely why mechanism audits must precede repairs. The repaired arm is a harness-side reference implementation, not shipped code; selecting the final design \cite{astrom2006, visioli2006} requires the hardware campaign.
+
+\begin{table}[t]
+\centering
+\caption{Anti-windup audit. $I_{eq} = u_{eq}/K_i$ versus the clamp $I_{\max}=204$; predicted offset (Eq.~\eqref{eq:aw}) versus observed with the limiter on, with it off, and with the harness-side reference repair (contribution clamp, identical law otherwise).}
+\label{tab:aw}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\input{results/table_aw.tex}
+\end{table}
+
+\subsection{Sensitivity studies}
+\label{sec:gain}
+
+\textbf{$\lambda$ sensitivity (Table~\ref{tab:lambda}).} The factory default $\lambda = 0.5$ s is an absolute time; growing $\lambda$ to $T$ or $2T$ eliminates overshoot but, with the limiter engaged, freezes the loop: $K_i$ shrinks until $I_{eq}$ is six to ten times the clamp and the process never reaches 90\% of setpoint (mean error $\approx 42$ units; predicted 42.39 in Table~\ref{tab:aw}). Track B shows the same $\lambda = T$ setting is unproblematic with the limiter removed (P2: 1.7\% overshoot, settles in 35.9 s).
+
+\begin{table}[t]
+\centering
+\caption{$\lambda$ sensitivity on P2 ($T{=}10$ s, $L{=}5$ s), Track A. $t_r$ ``--'' denotes failure to reach 90\% of setpoint; no configuration settles within the 2\% band.}
+\label{tab:lambda}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\input{results/table_lambda.tex}
+\end{table}
+
+\textbf{Plant-gain sweep (Table~\ref{tab:gain}).} With $K = 0.5$ the ultimate-gain options adapt through the relay experiment (ZN: 10.3\% overshoot) while the K-blind model-based options become sluggish with large offsets (23.3 units). With $K = 2$ the model-based options become practically unstable (106.8\% overshoot) whereas the ultimate-gain options degrade more gracefully (ZN 59.4\%, TL 10.7\%). This quantifies the $K$-omission of Table~\ref{tab:audit}.
+
+\begin{table}[t]
+\centering
+\caption{Plant-gain sweep on P2 dynamics ($K \in \{0.5, 2.0\}$), Track A.}
+\label{tab:gain}
+\small
+\setlength{\tabcolsep}{3pt}
+\input{results/table_gain.tex}
+\end{table}
+
+\subsection{Resource footprint}
+
+Static footprint is measured by cross-compilation (script \texttt{sim/mcu\_footprint.sh}; arduino-cli 1.3.1 with the arduino:avr 1.8.8 and esp32:esp32 3.3.11 cores at their default \texttt{-Os}; the metric is the flash/RAM delta between minimal sketches with and without one library instance, plus the on-target \texttt{sizeof} recovered from the compiler): on ATmega328P (Uno) the library object measures exactly \textbf{161 bytes} and adds 5706 bytes of flash including floating-point support; on ESP32 the object measures \textbf{172 bytes} with a 2192-byte flash delta. The project README's ``${\sim}40$ bytes per instance'' is therefore off by a factor of four. For compute we report a deliberately modest host-side indicator: a single-threaded loop of $3\times10^5$ deterministic \texttt{update()} calls under \texttt{steady\_clock} on an i5-10310U at \texttt{-O2} averages approximately 10 ns per call including loop overhead (9.3--10.1 ns across runs; the released run's value is in \texttt{footprint.txt}). RQ3 is thereby half answered: static footprint and simulated commissioning duration are measured; worst-case execution time, stack and heap usage, and real-time deadline margin on target remain open empirical questions assigned to the hardware protocol (Phase E), not claims of this paper. Even a $10^3\times$ derating of the host indicator leaves margin against a 10--20 ms tick, but that is an expectation, not a measurement. The measured cost of auto-tuning that simulation does establish is commissioning duration: 51--148 s in Normal mode, up to 1327 s in Mild mode (simulated time).
+
+\section{Stage 3: Hardware Benchmark Protocol}
+\label{sec:protocol}
+
+The simulation stage answers RQ1--RQ3 under idealized conditions; this section specifies the physical campaign for RQ4. The campaign is sequenced so that no expensive data are collected from an unvalidated rig: plant characterization first, sensor validation and algorithm confirmation second (the gain-rule half is discharged in Section~\ref{sec:verify}), the primary setpoint-tracking comparison third, robustness conditions fourth, on-target resource measurement fifth, and secondary conditions last.
+
+\subsection{Experimental system}
+
+The rig is a vertical clear chamber (60--100 cm) in which a variable-speed blower levitates a ping-pong ball at a controlled height, following documented precedents \cite{jernigan2009, tkacik2021, zachi2025}: reference generator, AutoTunePID controller, PWM fan driver, chamber, position sensor, and logger. Mechanical requirements are fixed for all trials (secure blower mount, flow straightener if needed, mesh guarding the blower, sensor outside the ball trajectory, identical geometry and object across trials). Ambient temperature and supply voltage are logged. Sensor validation is mandatory before formal trials: readings are compared against known positions over the control range, and the measured noise floor feeds the settling-band definition below.
+
+\subsection{Firmware architecture and control timing}
+
+Six firmware modules keep control timing free of I/O contamination: \texttt{Sensor} (validated height), \texttt{Reference}, \texttt{AutoTune}, \texttt{PID}, \texttt{Safety}, \texttt{Logger}. The control loop runs from a timer. Table~\ref{tab:timing} lists starting timing; Phase A measurements determine final values, frozen before formal trials. Every option must use identical control interval, filtering, derivative and integral handling, actuator limits, and slew rate, or the comparison is confounded.
+
+\begin{table}[t]
+\centering
+\caption{Initial firmware timing configuration, frozen after Phase A.}
+\label{tab:timing}
+\small
+\begin{tabular}{@{}lc@{}}
+\toprule
+Parameter & Starting value \\
+\midrule
+PID sample interval & 20 ms (50 Hz) \\
+Sensor sampling & $\ge$ 50 Hz \\
+Logger sampling & every control cycle \\
+Warm-up time & 5 min \\
+Baseline measurement & 10 s \\
+Post-trial observation & 10 s \\
+Trial repetitions & 10 per condition \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Phase A: characterize the plant before tuning}
+
+The operating range is mapped by sweeping blower command from rest (three repeat sweeps from the same initial condition), recording the rise threshold, controllable range, and maximum safe command, with steady-state height plotted against command to expose the nonlinearity the linear simulation stage excludes. Repeatability runs around a nominal operating height yield rise and settling times, sensor noise, transport delay, and run-to-run variability. Acceptance limits are then fixed and never revised after seeing controller results: allowed height band, maximum fan command, maximum continuous saturation duration, sensor-invalid timeout, maximum overshoot, maximum trial duration.
+
+\subsection{Tuning procedure and validity criteria}
+
+Each tuning trial follows one sequence: reset the rig; warm up and confirm voltage and sensor readings; enter Tune mode with one option and identical configuration; run under safety limits; check validity. A tuning run is rejected and its failure reason logged if it times out, loses the object, produces invalid oscillation estimates, or returns non-finite gains; failures are never silently retried. Valid gains are stored and held fixed; the chamber is reset before evaluation. An evaluation trial is valid only if the sensor stayed valid, the object stayed in the permitted region, the loop ran at rate, the profile completed or a defined failure occurred, and the log is complete. Failed trials are retained and reported as failures; they enter the reliability analysis, never the bin of discarded data.
+
+\subsection{Standardized test conditions}
+
+Five conditions per verified option: (1) \emph{setpoint tracking} (primary): step within the validated range, measuring settling, overshoot, steady-state error, integrated error; (2) \emph{multiple operating points}: low/medium/high setpoints exposing nonlinearity, where the plant-gain sweep meets reality; (3) \emph{disturbance rejection}: a repeatable, measured airflow disturbance, recording deviation and recovery; (4) \emph{measurement noise}: controlled injection or characterized natural noise, identical across options, measuring height fluctuation and output activity; (5) \emph{actuator saturation}: a predefined safe saturation period, evaluating recovery, accumulated integral error, and anti-windup behavior, directly probing Section~\ref{sec:awaudit} on hardware. With four distinct shipped gain mappings plus canonical CC*, five conditions, ten trials per cell: 250 evaluation trials plus tuning runs and pilots. Option order is randomized and trials are blocked against temperature drift and hardware condition.
+
+\subsection{Embedded resource measurement}
+
+Measured on target, not extrapolated: with MCU model, clock, compiler, flags, library version, and sensor configuration held constant, the campaign records flash and static RAM from linker maps; stack usage by analysis and runtime high-water marking; heap if dynamic allocation exists; PID and total-loop execution time by hardware timer over many updates, reported as distributions with worst case against the deadline; timing jitter from logged intervals; auto-tuning duration; optionally energy. Execution time and commissioning duration are distinct metrics: deadline compliance versus deployment cost.
+
+\subsection{Metrics and statistical analysis}
+
+Tracking error is $e_k = r_k - y_k$. Beyond the Stage 2 metrics the analysis adds ITAE $\sum_k t_k |e_k| \Delta t_k$, control effort $\sum_k u_k^2 \Delta t_k$, output total variation $\sum_k |u_k - u_{k-1}|$, disturbance recovery time, and tuning success rate. Overshoot is reported in millimeters and percent of step. Settling uses the noise-floored band
+\begin{equation}
+b = \max\!\bigl(\beta\,\Delta r,\; 3\hat{\sigma}_n\bigr), \qquad \beta = 0.05,
+\label{eq:band}
+\end{equation}
+where $\Delta r$ is the commanded step and $\hat{\sigma}_n$ is the steady-state measurement-noise standard deviation estimated from the Phase~A sensor-validation recordings; a dwell inside the band for the final observation window is required, failed runs are right-censored, and both $\beta$ and the multiplier are frozen before the campaign. The band analysis of Section~\ref{sec:success} motivates this floor; whether it is the right operational criterion for the physical system is itself confirmed against the Phase A noise measurements. The composite success criterion (settling, overshoot $\le$ limit, offset $\le$ limit, with limits fixed from Phase A) is declared before the campaign, and failure classification follows Section~\ref{sec:success}. Per condition and option the analysis reports mean/SD, median/IQR, 95\% confidence intervals, success and failure rates, and effect sizes against a predeclared baseline, with blocking and multiple-comparison correction. No composite score is computed unless its weighting is predeclared.
+
+\subsection{Data management and reproducibility}
+
+Each trial is a CSV file with metadata; the schema is fixed in advance:
+
+\begin{scriptsize}
+\begin{verbatim}
+timestamp_ms, trial_id, tuning_method, test_condition,
+reference_height_mm, measured_height_mm, error_mm,
+fan_command_pct, kp, ki, kd,
+sensor_valid, controller_state
+\end{verbatim}
+\end{scriptsize}
+
+\noindent Metadata covers firmware commit, library version, MCU model, sampling interval, sensor calibration, disturbance configuration, ambient conditions, and trial validity. Tuning-stage data are stored separately from evaluation data; originals are never overwritten; analysis scripts and processed datasets are versioned. The Stage 2 artifacts already follow this policy and were verified from a clean copy (Declarations).
+
+\subsection{Trial matrix and safety}
+
+Table~\ref{tab:matrix} summarizes the plan; ten-run targets are planning values pending pilot variability. Safety is engineered into the rig: the ball can never reach the blower or escape; the fan stops on sensor failure, excessive height, controller timeout, or any unsafe state; autotuning cannot continue indefinitely when oscillation criteria are unmet; a physical emergency stop exists; the fan driver returns to a safe state independently of the main loop.
+
+\begin{table}[t]
+\centering
+\caption{Formal trial matrix for the hardware campaign (per tuning option unless noted).}
+\label{tab:matrix}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{2.4cm}p{3.0cm}c@{}}
+\toprule
+Stage & Purpose & Runs \\
+\midrule
+Plant characterization & operating range, repeatability & 3 per sweep \\
+Tuning validation & convergence, safety limits & $\ge$ 5 pilot \\
+Formal tuning & success rate, gain variability & 10 \\
+Setpoint tracking & transient and steady state & 10 per condition \\
+Multiple operating points & nonlinearity robustness & 10 per condition \\
+Disturbance rejection & recovery, robustness & 10 per condition \\
+Noise sensitivity & noise propagation & 10 per condition \\
+Saturation recovery & anti-windup behavior & 10 per condition \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Finding F1: identification error is dominated by the estimation procedure, for the tested configuration}
+
+The factorial audit assigns mean effects of $-78.3$ percentage points (estimator) versus $+4.0$ (centering) to the ultimate-gain error, and $-19.5$ points (centering) to the period error, over the five tested linear plants with the shipped relay amplitude and zero hysteresis. Within that scope the attribution is quantitative, not narrative; outside it (nonlinear plants, strong asymmetry, hysteresis, load disturbances, other amplitudes) it is a hypothesis for the rig. The recommended repair retains both parts, discard start-up cycles and center the relay, because centering is the operative fix for the period that all five rules consume. We again flag that this finding corrected our own earlier centering hypothesis; keeping the correction visible is part of the method.
+
+\subsection{Finding F2: four mappings, two canonical, under five labels}
+
+Table~\ref{tab:audit} documents, per option, the published rule, its required inputs, the deviation, and whether Track B supplies those inputs. The equivalence of the IMC and Lambda rows is an equivalence of implementations in v1.2.0, not a statement about the underlying tuning philosophies. Practitioners selecting among the five labels are, in two of five cases, not selecting what the label says.
+
+\subsection{Finding F3: end-to-end failures are dominated by shared-pipeline mechanisms, attributed case by case}
+
+Three claims are kept distinct, each supported by its own ablation rather than by the track contrast alone. (1) The relay audit quantifies the contribution of the estimation procedure and relay centering to identification error (Section~\ref{sec:relayaudit}). (2) The anti-windup ablation quantifies the limiter's contribution to steady-state offsets under its stated assumptions (Section~\ref{sec:awaudit}). (3) Track B shows how the rules behave under specified model inputs and protection settings (Table~\ref{tab:factors}). Reading Tables~\ref{tab:main} and~\ref{tab:trackb} together under that decomposition: on these plants the dominant end-to-end failures (delay-dominant overshoot, offset stagnation) disappear when rules receive correct inputs and the limiter is removed, except for canonical CC*, which fails on lag-dominant plants for reasons intrinsic to the rule; the offset stagnation is attributed to the limiter by ablation (2), the identification component of the overshoot by audit (1) and the heuristic $T,L$ mapping. What the track contrast adds is the combined observation, not a single-factor estimate: the shared pipeline dominates the failures on these plants, and rule behavior remains plant- and rule-dependent. The fixed $T,L$ mapping of Eq.~\eqref{eq:tlmap} and the omitted process gain are the specific culprits, the latter extended to gain mismatch by Table~\ref{tab:gain}.
+
+\subsection{Finding F4: a dimensionally mismatched limiter with a validated repair direction}
+
+Under assumptions A1--A4 the engagement condition $K_i I_{\max} < u_{eq}$ predicts the offset in closed form, matches observation within 0.4 units in the non-oscillatory cases, and both the disable-ablation and the harness-side contribution-clamped reference repair eliminate those offsets. The audit demonstrates a defect and validates a repair \emph{direction}; selecting the final design (contribution clamp versus conditional integration \cite{astrom2006, visioli2006}) is hardware-campaign work. The equation's domain excludes oscillatory loops, non-unity gain, and saturation-driven offsets, and the text says so where it is used.
+
+\subsection{Method selection guidance}
+
+Table~\ref{tab:selmatrix} is a provisional guide for the tested linear plants at library defaults, not a deployment recommendation: no Track A configuration meets the composite success criterion on four of five plants, TL carries large offsets where its $K_i$ is small, and the guide's pre-flight checks diagnose \emph{known failure mechanisms of this implementation}, they do not certify stability or general superiority on nonlinear plants. The recommendation that follows from the evidence is to repair and validate the pipeline (relay estimation, $T,L$ identification, anti-windup) before deploying any of the five options.
+
+\begin{table}[t]
+\centering
+\caption{Provisional selection guide, Track A simulation evidence only (tested linear plants, library defaults, this implementation). Not a general deployment recommendation; see text.}
+\label{tab:selmatrix}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{2.6cm}p{2.1cm}p{2.6cm}@{}}
+\toprule
+Plant regime & Least-bad option & Rationale / caveat \\
+\midrule
+Lag-dominant, $L/T \lesssim 0.2$ & TL; IMC if offset tolerable & TL: 4--8\% OS, best noise IAE. IMC smooth but limiter-limited on slow plants. \\
+Balanced, $0.2 < L/T < 1$ & TL & Only option under 4\% OS; large offset. \\
+Delay-dominant, $L/T \ge 1$ & TL (least bad) & All options fail the success criterion; external FOPDT identification + manual gains preferred. \\
+Unity-gain assumption & Verify $K \approx 1$ & Model-based options degrade as $1/K$ (Table~\ref{tab:gain}). \\
+Any plant & Check $K_i \cdot 0.8 \times \text{span} \ge u_{eq}$ & Diagnoses the clamp mechanism (\S\ref{sec:awaudit}); not a stability certificate. \\
+Noisy sensor & Any + input filter & 2\% band unsettles by design; use noise-floored bands (\S\ref{sec:success}). \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{What the hardware campaign settles}
+
+(H1) relay identification on the chamber overestimates the critical gain with error dominated by transient-cycle averaging, testable by re-estimating from logged traces with the released independent estimator; (H2) at operating points with significant transport delay, the model-based options degrade below their Track B ceiling, quantifiable by per-rig FOPDT identification; (H3) options whose emitted $K_i$ implies $K_i I_{\max} < u_{eq}$ at the bias fan command show the predicted offset, attributable mechanistically by the saturation condition; (H4) all options meet the 50 Hz deadline on target with wide margin, leaving control quality and commissioning duration as the discriminators. The blocked, randomized, failure-reporting design makes these falsifiable.
+
+\subsection{Recommendations for library evolution}
+
+In priority order: (1) exclude start-up cycles from the amplitude average and expose identified amplitude and duty cycle so callers can detect a sick experiment; (2) center the relay on the actuator bias; (3) rescale anti-windup to clamp the integral contribution, or adopt conditional integration; (4) replace the fixed $T,L$ mapping with a two-point fit and include the process gain; (5) implement canonical CC and a differentiated Lambda policy, or relabel; (6) seed the integral with $u_{eq}/K_i$ at commissioning; (7) correct the README footprint claim (161 bytes on AVR, not ${\sim}40$). Items 1--3 are local changes whose effects this paper's audits already predict or demonstrate.
+
+\subsection{Threats to validity}
+
+The simulation uses exact linear plants; quantization, scheduler jitter, and plant nonlinearity are absent and are what the rig surfaces. The relay-audit attribution covers the tested plants, relay amplitude, and zero hysteresis; biased-relay variants under hysteresis and load disturbance \cite{hang1993} are rig work. Track B changes three factors jointly (Table~\ref{tab:factors}); within-track columns isolate the protection factor, but the track contrast is diagnostic, not a single-factor estimate. The canonical CC* formulas follow the original paper as commonly transcribed \cite{cohen1953, odwyer2006}. The success criterion's overshoot and offset limits (20\%, 2 units) are predeclared but conventional; the band analysis shows which conclusions survive band changes. Host timing is an indicator; on-target timing is Phase E. The hardware protocol is specified but unexecuted, and the noise campaign fixes Gaussian statistics and two amplitudes. Finally, the author owns the evaluated library; the disclosure is in the Declarations, and all artifacts are released so every claim can be checked independently.
+
+\section{Conclusion}
+
+This study treated a multi-method embedded auto-tuner as an auditable artifact and made the audit itself the contribution. Three results survive scrutiny with scoped claims: for the tested plants and relay configuration, the ultimate-gain inflation of the shipped identification is an estimation-procedure effect ($-78.3$ points) rather than a centering effect ($+4.0$ points, but $-19.5$ points on the period); the end-to-end failures of the pipeline are mostly absent when the same rules receive correct inputs and the protection defect is removed, with canonical Cohen-Coon the rule-level exception on lag-dominant plants; and the anti-windup limiter's dimensional mismatch yields an exact engagement condition whose predicted offsets match observation within 0.4 units and whose repair direction is validated in the tested non-oscillatory cases. The predeclared success criterion shows one of 25 end-to-end configurations succeeding clean and none under 1\% noise, while the band analysis demonstrates that the measured settling rate is highly sensitive to the operational definition of settling, which motivates (and only motivates) the protocol's noise-floored bands. Static footprint is measured, not estimated: 161 bytes per object on ATmega328P, 172 on ESP32, a 5.7 KB AVR flash delta; worst-case execution time, stack usage, and deadline margin on target remain unmeasured. Within the tested plants, defaults, and implementation, TL is the least-bad end-to-end option, the Normal oscillation mode the only trustworthy identification configuration, and the two pre-flight checks the fastest diagnostics of the known mechanisms; these specifics are v1.2.0-bound, whereas the mechanisms themselves (transient-contaminated relay averaging, raw-accumulator windup clamps, heuristic model mapping) are generic risks in relay-based auto-tuners, and the audit methodology (independent formula verification, factorial identification audit, mechanism-specific ablation, trace-level reproducibility) is reusable on any such implementation. Physical closed-loop behavior and on-target timing remain unverified: the frozen air-levitation campaign, with noise-floored bands, right-censored failures, blocked randomization, and on-target resource measurement, is where that verification happens. The harness, raw data, protocol, and one-command reproduction are released with the paper.
+
+\section*{Declarations}
+
+\textbf{Funding:} This research received no external funding.\\
+\textbf{Conflicts of interest:} The author declares no competing interests. The evaluated library is the author's own open-source project, disclosed so that the criticism of its implementation findings, not its promotion, is reproducible.\\
+\textbf{Data availability and reproducibility:} All simulation data were generated by the released harness in a single run and regenerate via \texttt{build.sh --sim}; the harness, raw CSVs (including relay traces and per-seed noise statistics), table generators, cross-compilation footprint script, and build scripts are released in the library repository under \texttt{research/} (\url{https://github.com/lily-osp/AutoTunePID}). A clean-copy verification was performed from a fresh checkout: all CSVs, table fragments, and figures reproduce byte-identically and the PDF text identically; the only quantity that varies between runs is the host timing indicator, which is reported as a range and never enters a claim. Seeds and noise distributions are fixed in the harness source. Simulation code reuses the library source under its MIT license.\\
+\textbf{Corresponding author:} Azzar Budiyanto, \texttt{azzar.budi@gmail.com}.
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

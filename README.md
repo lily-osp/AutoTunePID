@@ -338,7 +338,43 @@ void loop() {
 - Update interval fixed at 100ms for stability.
 - Filter alpha values impact system responsiveness.
 - Auto-tuning duration configurable (default: 5 seconds).
-- Memory footprint optimized (~40 bytes per instance).
+- Memory footprint: 161 bytes per instance on ATmega328P (measured by cross-compilation; see Research & Evaluation below).
+
+---
+
+## Research & Evaluation
+
+This library ships with a full research artifact in [`research/`](research/):
+the paper *"Comparative Performance Evaluation of Multi-Method PID
+Auto-Tuning for Resource-Constrained Embedded Control Systems"* (14-page
+manuscript, benchmark harness, raw data, and one-command reproduction).
+
+The study audits v1.2.0 at three levels and found four actionable defects
+(quantified, with fixes predicted in the paper):
+
+| Finding | Summary |
+|---|---|
+| Identification bias | The relay tuner's $K_u$ estimate is inflated 48-86% by averaging oscillation amplitude over start-up transient cycles; steady-state estimation recovers most of it. `Normal` is the only accurate oscillation mode. |
+| Duplicated methods | IMC and Lambda emit identical gains in v1.2.0; the CC option is a $K_u$-based variant, not the classical reaction-curve rule. |
+| Model mapping | The fixed `T = 0.67·Tu`, `L = 0.17·Tu` heuristic inverts delay-dominant plant character; model-based methods overshoot more than Ziegler-Nichols there. |
+| Anti-windup | The limiter clamps the raw integral accumulator (dimensionally mismatched): if `Ki · 0.8 · output_span < required bias`, integral action freezes and a steady-state offset remains. Quick check: `Ki · 0.8 · (maxOutput - minOutput) >= u_eq`. |
+
+Measured by cross-compilation: 161 bytes per instance on ATmega328P
+(+5.7 KB flash), 172 bytes on ESP32. Until the fixes land: prefer
+Tyreus-Luyben end-to-end, keep the Normal oscillation mode, verify plant
+gain near unity for the model-based options.
+
+Reproduce everything from a fresh clone:
+
+```sh
+cd research
+./build.sh            # compile research/paper.pdf
+./build.sh --sim      # regenerate all data + figures from ../src, then compile
+```
+
+Details, protocol for the planned air-levitation hardware campaign, and the
+submission strategy: [research/README.md](research/README.md) and
+[research/SUBMISSION-GUIDE.md](research/SUBMISSION-GUIDE.md).
 
 ---
 
